@@ -1,3 +1,6 @@
+// gcc projeto.c -o projeto -lncurses
+// ./projeto
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
