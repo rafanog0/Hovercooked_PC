@@ -8,12 +8,12 @@ O objetivo desse projeto é aprender e aprofundar em conceitos de gerenciamento 
 
 #### Usando makefile:
 ```bash
-make run
+make
 ```
 #### Diretamente no terminal:
 ```bash
-gcc projeto.c -o projeto -lncurses
+gcc -c -w -I./inc -g src/main.c -o obj/main.o -lncurses
 ```
 ```bash
-./projeto
+./main
 ```
