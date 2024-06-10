@@ -6,6 +6,8 @@
 #include <string.h>
 #include <ncurses.h>
 #include <pthread.h>
+#include <unistd.h>
+
 
 #define BUFFER 128
 #define SUCESSO 1
@@ -35,6 +37,8 @@ struct lista
 };
 
 char report_erro[BUFFER];
+lista *exemplo;
+int gameover = 0;
 
 lista *cria_lista()
 {
@@ -49,7 +53,7 @@ lista *cria_lista()
     return head;
 }
 
-int remove_lista(lista *head, int valor)
+int remove_lista(lista *head, char* nome)
 {
     knot *atual = head->first;
     knot *anterior = NULL;
@@ -59,7 +63,7 @@ int remove_lista(lista *head, int valor)
         return ERRO;
     }
 
-    while (atual != NULL && atual->info.tempo != valor)
+    while(atual != NULL && strcmp(atual->info.nome, nome))
     {
         anterior = atual;
         atual = atual->prox;
@@ -83,7 +87,7 @@ int remove_lista(lista *head, int valor)
 void remove_primeiro(lista *head)
 {
     if (head->first != NULL)
-        remove_lista(head, head->first->info.tempo);
+        remove_lista(head, head->first->info.nome);
 }
 
 int insere_lista(lista *head, pedido info)
@@ -157,9 +161,37 @@ void libera_lista(lista *head)
     free(head);
 }
 
+
+void decrementa_tempo_pedidos()
+{
+    knot* atual = exemplo->first;
+    while(atual != NULL)
+    {
+        atual->info.tempo--;
+        if(atual->info.tempo == 0)
+            gameover = 1;
+        atual = atual->prox;
+    }
+}
+
+void *temporizador()
+{
+    while(1)
+    {
+        if(gameover == 1)
+            exit(1);
+        sleep(1);
+        decrementa_tempo_pedidos();
+        imprime_lista_ncurses(exemplo);
+    }
+}
+
 int main()
 {
-    lista *exemplo = cria_lista();
+    pthread_t timer;
+    exemplo = cria_lista();
+    pthread_create(&timer, NULL, temporizador, NULL);
+
     if (exemplo == NULL)
     {
         strcpy(report_erro, "Erro ao criar a lista\n");
@@ -168,19 +200,19 @@ int main()
 
     pedido pedidos[4];
     strcpy(pedidos[0].nome, "Bife");
-    pedidos[0].tempo = 5;
+    pedidos[0].tempo = 25;
     pedidos[0].pontos = 10;
 
     strcpy(pedidos[1].nome, "Macarrão");
-    pedidos[1].tempo = 4;
+    pedidos[1].tempo = 17;
     pedidos[1].pontos = 8;
 
     strcpy(pedidos[2].nome, "Arroz");
-    pedidos[2].tempo = 3;
+    pedidos[2].tempo = 34;
     pedidos[2].pontos = 5;
 
     strcpy(pedidos[3].nome, "Feijoada");
-    pedidos[3].tempo = 2;
+    pedidos[3].tempo = 21;
     pedidos[3].pontos = 15;
 
     for (int i = 0; i < 4; i++)
