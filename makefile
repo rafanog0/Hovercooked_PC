@@ -5,6 +5,7 @@ INCDIR = $(BLDDIR)/inc
 SRCDIR = $(BLDDIR)/src
 OBJDIR = $(BLDDIR)/obj
 CFLAGS = -c -w -I$(INCDIR) -g
+LIBFLAGS = -lncurses
 SRC = $(wildcard $(SRCDIR)/*.c)
 OBJ = $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SRC))
 EXE = main
@@ -14,7 +15,7 @@ EXE = main
 all: clean $(EXE) run
 
 $(EXE): $(OBJ)
-	$(CC) $(LDFLAGS) $(OBJDIR)/*.o -o $@ -lncurses
+	$(CC) $(LDFLAGS) $(OBJDIR)/*.o -o $@ $(LIBFLAGS)
 
 $(OBJDIR)/%.o : $(SRCDIR)/%.c
 	@mkdir -p $(@D)
