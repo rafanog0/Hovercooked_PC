@@ -5,6 +5,12 @@ O objetivo desse projeto é aprender e aprofundar em conceitos de gerenciamento 
 
 
 ### Execução
+
+#### Usando makefile:
+```bash
+make run
+```
+#### Diretamente no terminal:
 ```bash
 gcc projeto.c -o projeto -lncurses
 ```
