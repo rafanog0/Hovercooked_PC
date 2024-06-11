@@ -108,22 +108,44 @@ void imprime_pedido_ncurses(int y, int x, pedido p) {
   mvprintw(y + 4, x, "+------------------------------+");
 }
 
-void imprime_lista_ncurses(lista *head) {
-  init_pair(5, COLOR_RED, COLOR_BLACK);
-  clear();
-  int y = 1; // Linha fixa
-  int x = 1; // Posição horizontal inicial
-  knot *atual = head->first;
-  while (atual != NULL) {
-    imprime_pedido_ncurses(y, x, atual->info);
-    x += 34; // Avança a posição horizontal para o próximo pedido
-    atual = atual->prox;
-  }
-  attron(COLOR_PAIR(5));
-  mvprintw(LINES - 1, 0, "Encerrar -> 'q'; Remover -> 'r'");
-  attroff(COLOR_PAIR(5));
 
-  refresh();
+void desenha_bancada(int y, int x, int num) {
+    mvprintw(y, x,     "+----------+");
+    mvprintw(y + 1, x, "|          |");
+    mvprintw(y + 2, x, "|          |");
+    mvprintw(y + 3, x, "|          |");
+    mvprintw(y + 4, x, "+----------+");
+    
+    mvprintw(y + 2, x + 5, "%d", num);
+}
+
+
+void imprime_lista_ncurses(lista *head) {
+    init_pair(5, COLOR_RED, COLOR_BLACK);
+    clear();
+
+    int pedidos_y = 1; 
+    int pedidos_x = 1; 
+
+    int bancada_y = 10;  
+    int bancada_x = COLS - 13;  
+    int bancada_num = 1; // Conteúdo escrito na bancada, também da para adptar ao tipo string
+
+    knot *atual = head->first;
+    while (atual != NULL) {
+        imprime_pedido_ncurses(pedidos_y, pedidos_x, atual->info);
+        pedidos_x += 34;
+        atual = atual->prox;
+    }
+
+    desenha_bancada(bancada_y, bancada_x, 1);
+    desenha_bancada(bancada_y + 6, bancada_x, 2);
+
+    attron(COLOR_PAIR(5));
+    mvprintw(LINES - 1, 0, "Encerrar -> 'q'; Remover -> 'r'");
+    attroff(COLOR_PAIR(5));
+
+    refresh();
 }
 
 void libera_lista(lista *head) {
