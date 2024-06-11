@@ -1,6 +1,3 @@
-// gcc projeto.c -o projeto -lncurses
-// ./projeto
-
 #include <ncurses.h>
 #include <pthread.h>
 #include <stdio.h>
