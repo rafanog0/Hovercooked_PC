@@ -8,6 +8,7 @@
 #define BUFFER 128
 #define SUCESSO 1
 #define ERRO -1
+#define COLOR_BROWN 8
 
 typedef struct pedido pedido;
 typedef struct lista lista;
@@ -102,14 +103,26 @@ int insere_lista(lista *head, pedido info) {
 
 void imprime_pedido_ncurses(int y, int x, pedido p) {
   mvprintw(y, x, "+------------------------------+");
-  mvprintw(y + 1, x, "| Nome: %-23s |", p.nome);
-  mvprintw(y + 2, x, "| Tempo: %-22d |", p.tempo);
-  mvprintw(y + 3, x, "| Pontos: %-21d |", p.pontos);
+  mvprintw(y + 1, x, "| Nome: %-23s|", p.nome);
+
+  if(p.tempo <= 5)
+  {
+    mvprintw(y + 2, x, "|");
+    attron(COLOR_PAIR(5));
+    mvprintw(y + 2, x + 2, "Tempo: %-22d", p.tempo);
+    attroff(COLOR_PAIR(5));
+    mvprintw(y + 2, x + 30, " |");
+  }
+  else
+    mvprintw(y + 2, x, "| Tempo: %-22d|", p.tempo);
+  
+  mvprintw(y + 3, x, "| Pontos: %-21d|", p.pontos);
   mvprintw(y + 4, x, "+------------------------------+");
 }
 
 
 void desenha_bancada(int y, int x, int num) {
+
     mvprintw(y, x,     "+----------+");
     mvprintw(y + 1, x, "|          |");
     mvprintw(y + 2, x, "|          |");
@@ -119,17 +132,41 @@ void desenha_bancada(int y, int x, int num) {
     mvprintw(y + 2, x + 5, "%d", num);
 }
 
+void desenha_ingredientes(int y, int x, int num) {
+
+    // init_color(COLOR_BROWN, 545, 271, 75);
+    init_color(COLOR_BROWN, 1000, 600, 0);
+    // rgb(255, 153, 0)
+    init_pair(6, COLOR_BROWN, COLOR_BLACK);
+
+
+
+    attron(COLOR_PAIR(6));
+    mvprintw(y, x,     "+----------+");
+    mvprintw(y - 1, x, "|          |");
+    mvprintw(y - 2, x, "|          |");
+    mvprintw(y - 3, x, "|          |");
+    mvprintw(y - 4, x, "+----------+");
+    attroff(COLOR_PAIR(6));
+    
+    mvprintw(y - 2, x + 5, "%d", num);
+}
+
 
 void imprime_lista_ncurses(lista *head) {
     init_pair(5, COLOR_RED, COLOR_BLACK);
     clear();
 
-    int pedidos_y = 1; 
-    int pedidos_x = 1; 
+    int pedidos_y = 2; 
+    int pedidos_x = 2; 
 
     int bancada_y = 10;  
     int bancada_x = COLS - 13;  
     int bancada_num = 1; // Conteúdo escrito na bancada, também da para adptar ao tipo string
+
+    int ingredientes_y = LINES - 3;
+    int ingredientes_x = 35;
+    
 
     knot *atual = head->first;
     while (atual != NULL) {
@@ -139,8 +176,18 @@ void imprime_lista_ncurses(lista *head) {
     }
 
     desenha_bancada(bancada_y, bancada_x, 1);
-    desenha_bancada(bancada_y + 6, bancada_x, 2);
+    desenha_bancada(bancada_y + 6, bancada_x, 2); // TODO dificuldade e quantidade de jogadores definem quantas bancadas de entrega
+    desenha_bancada(bancada_y + 12, bancada_x, 3);
+    desenha_bancada(bancada_y + 18, bancada_x, 4);
 
+    desenha_ingredientes(ingredientes_y, ingredientes_x, 1);
+    desenha_ingredientes(ingredientes_y, ingredientes_x + 15, 2);
+    desenha_ingredientes(ingredientes_y, ingredientes_x + 30, 3);
+    desenha_ingredientes(ingredientes_y, ingredientes_x + 45, 4);
+
+
+    mvprintw(1, 1, "Pedidos:");
+    mvprintw(bancada_y - 1, bancada_x - 1, "Entregas:");
     attron(COLOR_PAIR(5));
     mvprintw(LINES - 1, 0, "Encerrar -> 'q'; Remover -> 'r'");
     attroff(COLOR_PAIR(5));
@@ -190,11 +237,11 @@ int main() {
 
   pedido pedidos[4];
   strcpy(pedidos[0].nome, "Bife");
-  pedidos[0].tempo = 25;
+  pedidos[0].tempo = 15;
   pedidos[0].pontos = 10;
 
   strcpy(pedidos[1].nome, "Macarrão");
-  pedidos[1].tempo = 17;
+  pedidos[1].tempo = 12;
   pedidos[1].pontos = 8;
 
   strcpy(pedidos[2].nome, "Arroz");
