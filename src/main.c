@@ -101,98 +101,100 @@ int insere_lista(lista *head, pedido info) {
   return SUCESSO;
 }
 
-void imprime_pedido_ncurses(int y, int x, pedido p) {
-  mvprintw(y, x, "+------------------------------+");
-  mvprintw(y + 1, x, "| Nome: %-23s|", p.nome);
+void imprime_pedido_ncurses(int y, int x, pedido p, WINDOW *offscreen) {
+  mvwprintw(offscreen, y, x, "+------------------------------+");
+  mvwprintw(offscreen, y + 1, x, "| Nome: %-23s|", p.nome);
 
-  if(p.tempo <= 5)
-  {
-    mvprintw(y + 2, x, "|");
-    attron(COLOR_PAIR(5));
-    mvprintw(y + 2, x + 2, "Tempo: %-22d", p.tempo);
-    attroff(COLOR_PAIR(5));
-    mvprintw(y + 2, x + 30, " |");
-  }
-  else
-    mvprintw(y + 2, x, "| Tempo: %-22d|", p.tempo);
-  
-  mvprintw(y + 3, x, "| Pontos: %-21d|", p.pontos);
-  mvprintw(y + 4, x, "+------------------------------+");
+  if (p.tempo <= 5) {
+    mvwprintw(offscreen, y + 2, x, "|");
+    wattron(offscreen, COLOR_PAIR(5));
+    mvwprintw(offscreen, y + 2, x + 2, "Tempo: %-22d", p.tempo);
+    wattroff(offscreen, COLOR_PAIR(5));
+    mvwprintw(offscreen, y + 2, x + 30, " |");
+  } else
+    mvwprintw(offscreen, y + 2, x, "| Tempo: %-22d|", p.tempo);
+
+  mvwprintw(offscreen, y + 3, x, "| Pontos: %-21d|", p.pontos);
+  mvwprintw(offscreen, y + 4, x, "+------------------------------+");
 }
 
+void desenha_bancada(int y, int x, int num, WINDOW *offscreen) {
 
-void desenha_bancada(int y, int x, int num) {
+  mvwprintw(offscreen, y, x,     "+----------+");
+  mvwprintw(offscreen, y + 1, x, "|          |");
+  mvwprintw(offscreen, y + 2, x, "|          |");
+  mvwprintw(offscreen, y + 3, x, "|          |");
+  mvwprintw(offscreen, y + 4, x, "+----------+");
 
-    mvprintw(y, x,     "+----------+");
-    mvprintw(y + 1, x, "|          |");
-    mvprintw(y + 2, x, "|          |");
-    mvprintw(y + 3, x, "|          |");
-    mvprintw(y + 4, x, "+----------+");
-    
-    mvprintw(y + 2, x + 5, "%d", num);
+  mvwprintw(offscreen, y + 2, x + 5, "%d", num);
 }
 
-void desenha_ingredientes(int y, int x, int num) {
+void desenha_ingredientes(int y, int x, int num, WINDOW *offscreen) {
 
-    // init_color(COLOR_BROWN, 545, 271, 75);
-    init_color(COLOR_BROWN, 1000, 600, 0);
-    // rgb(255, 153, 0)
-    init_pair(6, COLOR_BROWN, COLOR_BLACK);
+  init_color(COLOR_BROWN, 1000, 600, 0);
+  init_pair(6, COLOR_BROWN, COLOR_BLACK);
 
+  wattron(offscreen, COLOR_PAIR(6));
+  mvwprintw(offscreen, y, x,     "+----------+");
+  mvwprintw(offscreen, y - 1, x, "|          |");
+  mvwprintw(offscreen, y - 2, x, "|          |");
+  mvwprintw(offscreen, y - 3, x, "|          |");
+  mvwprintw(offscreen, y - 4, x, "+----------+");
+  wattroff(offscreen, COLOR_PAIR(6));
 
-
-    attron(COLOR_PAIR(6));
-    mvprintw(y, x,     "+----------+");
-    mvprintw(y - 1, x, "|          |");
-    mvprintw(y - 2, x, "|          |");
-    mvprintw(y - 3, x, "|          |");
-    mvprintw(y - 4, x, "+----------+");
-    attroff(COLOR_PAIR(6));
-    
-    mvprintw(y - 2, x + 5, "%d", num);
+  mvwprintw(offscreen, y - 2, x + 5, "%d", num);
 }
-
 
 void imprime_lista_ncurses(lista *head) {
-    init_pair(5, COLOR_RED, COLOR_BLACK);
-    clear();
 
-    int pedidos_y = 2; 
-    int pedidos_x = 2; 
+  WINDOW *offscreen = newwin(LINES, COLS, 0, 0); // Cria uma janela fora da tela
 
-    int bancada_y = 10;  
-    int bancada_x = COLS - 13;  
-    int bancada_num = 1; // Conteúdo escrito na bancada, também da para adptar ao tipo string
+  if (offscreen == NULL) {
+    endwin();
+    strcpy(report_erro, "Erro ao criar janela offscreen.");
+    exit(1);
+  }
 
-    int ingredientes_y = LINES - 3;
-    int ingredientes_x = 35;
-    
+  init_pair(5, COLOR_RED, COLOR_BLACK);
 
-    knot *atual = head->first;
-    while (atual != NULL) {
-        imprime_pedido_ncurses(pedidos_y, pedidos_x, atual->info);
-        pedidos_x += 34;
-        atual = atual->prox;
-    }
+  werase(offscreen); // Limpa a janela offscreen
 
-    desenha_bancada(bancada_y, bancada_x, 1);
-    desenha_bancada(bancada_y + 6, bancada_x, 2); // TODO dificuldade e quantidade de jogadores definem quantas bancadas de entrega
-    desenha_bancada(bancada_y + 12, bancada_x, 3);
-    desenha_bancada(bancada_y + 18, bancada_x, 4);
+  int pedidos_y = 2;
+  int pedidos_x = 2;
 
-    desenha_ingredientes(ingredientes_y, ingredientes_x, 1);
-    desenha_ingredientes(ingredientes_y, ingredientes_x + 15, 2);
-    desenha_ingredientes(ingredientes_y, ingredientes_x + 30, 3);
-    desenha_ingredientes(ingredientes_y, ingredientes_x + 45, 4);
+  int bancada_y = 10;
+  int bancada_x = COLS - 13;
+  int bancada_num = 1; // Conteúdo escrito na bancada, também da para adptar ao tipo string
 
+  int ingredientes_y = LINES - 3;
+  int ingredientes_x = 35;
 
-    mvprintw(1, 1, "Pedidos:");
-    mvprintw(bancada_y - 1, bancada_x - 1, "Entregas:");
-    attron(COLOR_PAIR(5));
-    mvprintw(LINES - 1, 0, "Encerrar -> 'q'; Remover -> 'r'");
-    attroff(COLOR_PAIR(5));
+  knot *atual = head->first;
+  while (atual != NULL) {
+    imprime_pedido_ncurses(pedidos_y, pedidos_x, atual->info, offscreen);
+    pedidos_x += 34;
+    atual = atual->prox;
+  }
 
-    refresh();
+  desenha_bancada(bancada_y, bancada_x, 1, offscreen);
+  desenha_bancada(bancada_y + 6, bancada_x, 2, offscreen); // TODO dificuldade e quantidade de jogadores definem quantas bancadas de entrega
+  desenha_bancada(bancada_y + 12, bancada_x, 3, offscreen);
+  desenha_bancada(bancada_y + 18, bancada_x, 4, offscreen);
+
+  desenha_ingredientes(ingredientes_y, ingredientes_x, 1, offscreen);
+  desenha_ingredientes(ingredientes_y, ingredientes_x + 15, 2, offscreen);
+  desenha_ingredientes(ingredientes_y, ingredientes_x + 30, 3, offscreen);
+  desenha_ingredientes(ingredientes_y, ingredientes_x + 45, 4, offscreen);
+
+  mvwprintw(offscreen, 1, 1, "Pedidos:");
+  mvwprintw(offscreen, bancada_y - 1, bancada_x - 1, "Entregas:");
+  wattron(offscreen, COLOR_PAIR(5));
+  mvwprintw(offscreen, LINES - 1, 0, "Encerrar -> 'q'; Remover -> 'r'");
+  wattroff(offscreen, COLOR_PAIR(5));
+
+  copywin(offscreen, stdscr, 0, 0, 0, 0, LINES - 1, COLS - 1, FALSE);
+  refresh();
+  delwin(offscreen);
 }
 
 void libera_lista(lista *head) {
