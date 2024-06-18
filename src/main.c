@@ -11,6 +11,8 @@
 #define SUCESSO 1
 #define ERRO -1
 #define COLOR_BROWN 8
+#define SELECIONADO 1
+#define NAO_SELECIONADO 0
 
 typedef struct pedido pedido;
 typedef struct lista lista;
@@ -39,6 +41,9 @@ char report_erro[BUFFER];
 lista *exemplo;
 int gameover = 0;
 pedido pedidos[8];
+int mercado_selecionado = -1;
+int numero_mercados = 3;
+
 
 lista *cria_lista() {
   lista *head = (lista *)malloc(sizeof(lista));
@@ -158,18 +163,32 @@ void desenha_bancada(int y, int x, int num, WINDOW *offscreen) {
   mvwprintw(offscreen, y + 2, x + 5, "%d", num);
 }
 
-void desenha_mercado(int y, int x, int num, WINDOW *offscreen) {
+void desenha_mercado(int y, int x, int num, WINDOW *offscreen, int selecionado) {
 
   init_color(COLOR_BROWN, 1000, 600, 0);
   init_pair(6, COLOR_BROWN, COLOR_BLACK);
+  init_pair(7, COLOR_GREEN, COLOR_BLACK);
 
-  wattron(offscreen, COLOR_PAIR(6));
-  mvwprintw(offscreen, y, x,     "+----------+");
-  mvwprintw(offscreen, y - 1, x, "|          |");
-  mvwprintw(offscreen, y - 2, x, "|          |");
-  mvwprintw(offscreen, y - 3, x, "|          |");
-  mvwprintw(offscreen, y - 4, x, "+----------+");
-  wattroff(offscreen, COLOR_PAIR(6));
+  if(selecionado == SELECIONADO)
+  {
+    wattron(offscreen, COLOR_PAIR(7));
+    mvwprintw(offscreen, y, x,     "+----------+");
+    mvwprintw(offscreen, y - 1, x, "|          |");
+    mvwprintw(offscreen, y - 2, x, "|          |");
+    mvwprintw(offscreen, y - 3, x, "|          |");
+    mvwprintw(offscreen, y - 4, x, "+----------+");
+    wattroff(offscreen, COLOR_PAIR(7));
+  }
+  else
+  {
+    wattron(offscreen, COLOR_PAIR(6));
+    mvwprintw(offscreen, y, x,     "+----------+");
+    mvwprintw(offscreen, y - 1, x, "|          |");
+    mvwprintw(offscreen, y - 2, x, "|          |");
+    mvwprintw(offscreen, y - 3, x, "|          |");
+    mvwprintw(offscreen, y - 4, x, "+----------+");
+    wattroff(offscreen, COLOR_PAIR(6));
+  }
 
   mvwprintw(offscreen, y - 2, x + 5, "%d", num);
 }
@@ -191,14 +210,12 @@ void imprime_lista_ncurses(lista *head) {
   int pedidos_y = 2;
   int pedidos_x = 2;
 
-  int bancada_y = 10;
+  int bancada_y = 20;
   int bancada_x = COLS - 13;
   int bancada_num = 1; // Conteúdo escrito na bancada, também da para adptar ao tipo string
 
   int mercado_y = LINES - 3;
   int mercado_x = 75;
-
-  int numero_mercados = 3;
 
   knot *atual = head->first;
   while (atual != NULL) {
@@ -209,20 +226,24 @@ void imprime_lista_ncurses(lista *head) {
 
   desenha_bancada(bancada_y, bancada_x, 1, offscreen);
   desenha_bancada(bancada_y + 6, bancada_x, 2, offscreen); // TODO dificuldade e quantidade de jogadores definem quantas bancadas de entrega
-  desenha_bancada(bancada_y + 12, bancada_x, 3, offscreen);
-  desenha_bancada(bancada_y + 18, bancada_x, 4, offscreen);
+  // desenha_bancada(bancada_y + 12, bancada_x, 3, offscreen);
+  // desenha_bancada(bancada_y + 18, bancada_x, 4, offscreen);
 
 
   for(int i = 0; i < numero_mercados; i++)
   {
-    desenha_mercado(mercado_y, mercado_x, i, offscreen);
+    if(i == mercado_selecionado)
+      desenha_mercado(mercado_y, mercado_x, i, offscreen, SELECIONADO);
+    else
+      desenha_mercado(mercado_y, mercado_x, i, offscreen, NAO_SELECIONADO);
     mercado_x += 15;
+
   }
 
   mvwprintw(offscreen, 1, 1, "Pedidos:");
   mvwprintw(offscreen, bancada_y - 1, bancada_x - 1, "Entregas:");
   wattron(offscreen, COLOR_PAIR(5));
-  mvwprintw(offscreen, LINES - 1, 0, "Encerrar -> 'q'; Remover -> 'r'");
+  mvwprintw(offscreen, LINES - 1, 0, "Encerrar -> 'q'; Remover -> 'r'; Mercado -> 'm'");
   wattroff(offscreen, COLOR_PAIR(5));
 
   copywin(offscreen, stdscr, 0, 0, 0, 0, LINES - 1, COLS - 1, FALSE);
@@ -297,6 +318,30 @@ void gera_pedidos() {
 }
 
 
+void pega_comandos()
+{
+  int ch;
+  while ((ch = getch()) != 'q') {
+    if (ch == 'r') {
+      remove_primeiro(exemplo);
+      imprime_lista_ncurses(exemplo);
+    }
+    else if(ch == 'm')
+    {
+      mercado_selecionado = 0;
+      while((ch = getch()) != 'q')
+      {
+        if(ch == KEY_RIGHT && mercado_selecionado < numero_mercados - 1)
+          mercado_selecionado += 1;
+        else if(ch == KEY_LEFT && mercado_selecionado > 0 )
+          mercado_selecionado -= 1;
+      }
+      ch = '.'; // Tecla qualquer para não finalizar o programa
+      mercado_selecionado = -1; // Nenhum mercado selecionado
+    }
+  }
+}
+
 int main() {
   pthread_t timer;
   exemplo = cria_lista();
@@ -322,13 +367,8 @@ int main() {
 
   imprime_lista_ncurses(exemplo);
 
-  int ch;
-  while ((ch = getch()) != 'q') {
-    if (ch == 'r') {
-      remove_primeiro(exemplo);
-      imprime_lista_ncurses(exemplo);
-    }
-  }
+  pega_comandos();
+
 
   endwin();
   libera_lista(exemplo);
