@@ -158,7 +158,7 @@ void desenha_bancada(int y, int x, int num, WINDOW *offscreen) {
   mvwprintw(offscreen, y + 2, x + 5, "%d", num);
 }
 
-void desenha_ingredientes(int y, int x, int num, WINDOW *offscreen) {
+void desenha_mercado(int y, int x, int num, WINDOW *offscreen) {
 
   init_color(COLOR_BROWN, 1000, 600, 0);
   init_pair(6, COLOR_BROWN, COLOR_BLACK);
@@ -195,8 +195,10 @@ void imprime_lista_ncurses(lista *head) {
   int bancada_x = COLS - 13;
   int bancada_num = 1; // Conteúdo escrito na bancada, também da para adptar ao tipo string
 
-  int ingredientes_y = LINES - 3;
-  int ingredientes_x = 35;
+  int mercado_y = LINES - 3;
+  int mercado_x = 75;
+
+  int numero_mercados = 3;
 
   knot *atual = head->first;
   while (atual != NULL) {
@@ -210,10 +212,12 @@ void imprime_lista_ncurses(lista *head) {
   desenha_bancada(bancada_y + 12, bancada_x, 3, offscreen);
   desenha_bancada(bancada_y + 18, bancada_x, 4, offscreen);
 
-  desenha_ingredientes(ingredientes_y, ingredientes_x, 1, offscreen);
-  desenha_ingredientes(ingredientes_y, ingredientes_x + 15, 2, offscreen);
-  desenha_ingredientes(ingredientes_y, ingredientes_x + 30, 3, offscreen);
-  desenha_ingredientes(ingredientes_y, ingredientes_x + 45, 4, offscreen);
+
+  for(int i = 0; i < numero_mercados; i++)
+  {
+    desenha_mercado(mercado_y, mercado_x, i, offscreen);
+    mercado_x += 15;
+  }
 
   mvwprintw(offscreen, 1, 1, "Pedidos:");
   mvwprintw(offscreen, bancada_y - 1, bancada_x - 1, "Entregas:");
@@ -304,7 +308,6 @@ int main() {
   }
 
   gera_pedidos();
-
 
   for (int i = 0; i < 4; i++)
     insere_lista(exemplo, pedidos[i]);
