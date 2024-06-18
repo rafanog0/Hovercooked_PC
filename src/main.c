@@ -6,6 +6,8 @@
 #include <unistd.h>
 
 #define BUFFER 128
+#define MAX_INGREDIENTES 8
+#define BUFFER_INGREDIENTES 32
 #define SUCESSO 1
 #define ERRO -1
 #define COLOR_BROWN 8
@@ -16,6 +18,8 @@ typedef struct knot knot;
 
 struct pedido {
   char nome[BUFFER];
+  char ingredientes[MAX_INGREDIENTES][BUFFER_INGREDIENTES];
+  int numero_ingredientes;
   int tempo;
   int pontos;
 };
@@ -30,9 +34,11 @@ struct lista {
   int size;
 };
 
+// variaveis globais
 char report_erro[BUFFER];
 lista *exemplo;
 int gameover = 0;
+pedido pedidos[8];
 
 lista *cria_lista() {
   lista *head = (lista *)malloc(sizeof(lista));
@@ -102,21 +108,44 @@ int insere_lista(lista *head, pedido info) {
 }
 
 void imprime_pedido_ncurses(int y, int x, pedido p, WINDOW *offscreen) {
-  mvwprintw(offscreen, y, x, "+------------------------------+");
-  mvwprintw(offscreen, y + 1, x, "| Nome: %-23s|", p.nome);
 
-  if (p.tempo <= 5) {
-    mvwprintw(offscreen, y + 2, x, "|");
-    wattron(offscreen, COLOR_PAIR(5));
-    mvwprintw(offscreen, y + 2, x + 2, "Tempo: %-22d", p.tempo);
-    wattroff(offscreen, COLOR_PAIR(5));
-    mvwprintw(offscreen, y + 2, x + 30, " |");
-  } else
-    mvwprintw(offscreen, y + 2, x, "| Tempo: %-22d|", p.tempo);
+    const int largura_caixa = 32; // comprimento da linha horizontal
+    int altura_caixa = 6 + p.numero_ingredientes; // altura inicial + número de ingredientes
 
-  mvwprintw(offscreen, y + 3, x, "| Pontos: %-21d|", p.pontos);
-  mvwprintw(offscreen, y + 4, x, "+------------------------------+");
+    mvwprintw(offscreen, y, x, "+");
+    for (int i = 0; i < largura_caixa - 2; i++) {
+        mvwprintw(offscreen, y, x + 1 + i, "-");
+    }
+    mvwprintw(offscreen, y, x + largura_caixa - 1, "+");
+
+    mvwprintw(offscreen, y + 1, x, "| Nome: %-23s|", p.nome);
+
+    if (p.tempo <= 5) {
+        mvwprintw(offscreen, y + 2, x, "|");
+        wattron(offscreen, COLOR_PAIR(5));
+        mvwprintw(offscreen, y + 2, x + 2, "Tempo: %-22d", p.tempo);
+        wattroff(offscreen, COLOR_PAIR(5));
+        mvwprintw(offscreen, y + 2, x + 30, " |");
+    } else {
+        mvwprintw(offscreen, y + 2, x, "| Tempo: %-22d|", p.tempo);
+    }
+
+    mvwprintw(offscreen, y + 3, x, "| Pontos: %-21d|", p.pontos);
+
+    mvwprintw(offscreen, y + 4, x, "| Ingredientes:                |");
+
+    for (int i = 0; i < p.numero_ingredientes; i++) {
+        mvwprintw(offscreen, y + 5 + i, x, "|  %-28s|", p.ingredientes[i]);
+    }
+
+    mvwprintw(offscreen, y + altura_caixa - 1, x, "+");
+    for (int i = 0; i < largura_caixa - 2; i++) {
+        mvwprintw(offscreen, y + altura_caixa - 1, x + 1 + i, "-");
+    }
+    mvwprintw(offscreen, y + altura_caixa - 1, x + largura_caixa - 1, "+");
 }
+
+
 
 void desenha_bancada(int y, int x, int num, WINDOW *offscreen) {
 
@@ -227,6 +256,43 @@ void *temporizador() {
   }
 }
 
+void gera_pedidos() {
+  strcpy(pedidos[0].nome, "Bife Acebolado c Fritas");
+  pedidos[0].tempo = 30;
+  pedidos[0].pontos = 12;
+  pedidos[0].numero_ingredientes = 4;
+  strcpy(pedidos[0].ingredientes[0], "Carne");
+  strcpy(pedidos[0].ingredientes[1], "Manteiga");
+  strcpy(pedidos[0].ingredientes[2], "Batata");
+  strcpy(pedidos[0].ingredientes[3], "Oléo");
+
+  strcpy(pedidos[1].nome, "Pão de Queijo");
+  pedidos[1].tempo = 30;
+  pedidos[1].pontos = 12;
+  pedidos[1].numero_ingredientes = 4;
+  strcpy(pedidos[1].ingredientes[0], "Ovo");
+  strcpy(pedidos[1].ingredientes[1], "Polvilho");
+  strcpy(pedidos[1].ingredientes[2], "Leite");
+  strcpy(pedidos[1].ingredientes[3], "Oléo");
+
+  strcpy(pedidos[2].nome, "Isca de Peixe");
+  pedidos[2].tempo = 30;
+  pedidos[2].pontos = 9;
+  pedidos[2].numero_ingredientes = 3;
+  strcpy(pedidos[2].ingredientes[0], "Peixe");
+  strcpy(pedidos[2].ingredientes[1], "Oléo");
+  strcpy(pedidos[2].ingredientes[2], "Farinha");
+
+  strcpy(pedidos[3].nome, "Misto Quente");
+  pedidos[3].numero_ingredientes = 3;
+  pedidos[3].tempo = 30;
+  pedidos[3].pontos = 9;
+  strcpy(pedidos[3].ingredientes[0], "Pão");
+  strcpy(pedidos[3].ingredientes[1], "Presunto");
+  strcpy(pedidos[3].ingredientes[2], "Queijo");
+}
+
+
 int main() {
   pthread_t timer;
   exemplo = cria_lista();
@@ -237,22 +303,8 @@ int main() {
     return ERRO;
   }
 
-  pedido pedidos[4];
-  strcpy(pedidos[0].nome, "Bife");
-  pedidos[0].tempo = 15;
-  pedidos[0].pontos = 10;
+  gera_pedidos();
 
-  strcpy(pedidos[1].nome, "Macarrão");
-  pedidos[1].tempo = 12;
-  pedidos[1].pontos = 8;
-
-  strcpy(pedidos[2].nome, "Arroz");
-  pedidos[2].tempo = 34;
-  pedidos[2].pontos = 5;
-
-  strcpy(pedidos[3].nome, "Feijoada");
-  pedidos[3].tempo = 21;
-  pedidos[3].pontos = 15;
 
   for (int i = 0; i < 4; i++)
     insere_lista(exemplo, pedidos[i]);
