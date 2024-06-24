@@ -1,9 +1,11 @@
 #include "../inc/display_infos.h"
+#include "../inc/game.h"
 #include <locale.h>
 #include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 /// Estrutura que representa uma escolha do menu, com título e tempo
 struct choice_t {
@@ -106,6 +108,94 @@ void load_title(char title[][MAX_TITLE_LENGTH], int *num_lines) {
 
   fclose(file);
 }
+
+void match_clock(void *arg)
+{
+  List_t *orders_list = (List_t *)arg;
+  while(1)
+  {
+    sleep(1);
+    orders_list->time_left--;
+  }
+}
+
+
+void display_orders(int y, int x, Order_t p, WINDOW *offscreen) {
+    const int largura_caixa = 32; // comprimento da linha horizontal
+    int altura_caixa = 6; // altura inicial
+
+    // Desenha a linha horizontal superior
+    mvwprintw(offscreen, y, x, "+");
+    for (int i = 0; i < largura_caixa - 2; i++) {
+        mvwprintw(offscreen, y, x + 1 + i, "-");
+    }
+    mvwprintw(offscreen, y, x + largura_caixa - 1, "+");
+
+    // Desenha o conteúdo da caixa
+    mvwprintw(offscreen, y + 1, x, "| Nome: %-23s|", p.name);
+    mvwprintw(offscreen, y + 2, x, "| Tempo preparo: %-14d|", p.time);
+    mvwprintw(offscreen, y + 3, x, "| Pontos: %-21d|", p.points);
+
+    // Desenha a linha horizontal inferior
+    mvwprintw(offscreen, y + altura_caixa - 2, x, "+");
+    for (int i = 0; i < largura_caixa - 2; i++) {
+        mvwprintw(offscreen, y + altura_caixa - 2, x + 1 + i, "-");
+    }
+    mvwprintw(offscreen, y + altura_caixa - 2, x + largura_caixa - 1, "+");
+}
+
+
+void display_time(int y, int x, int time_left, WINDOW *offscreen)
+{
+  char time_left_str[20];
+  snprintf(time_left_str, sizeof(time_left_str), "Tempo: %ds", time_left);
+  mvwprintw(offscreen, y, x + 2, time_left_str);
+}
+
+void display_game(List_t *orders_list) {
+
+  WINDOW *offscreen = newwin(LINES, COLS, 0, 0); // Cria uma janela fora da tela
+
+  if (offscreen == NULL) {
+    endwin();
+    strcpy(report_error, "Erro ao criar janela offscreen.");
+    exit(1);
+  }
+
+  init_pair(5, COLOR_RED, COLOR_BLACK);
+
+  werase(offscreen); // Limpa a janela offscreen
+
+  int pedidos_y = 2;
+  int pedidos_x = 2;
+
+  int bancada_y = 20;
+  int bancada_x = COLS - 13;
+  int bancada_num = 1; // Conteúdo escrito na bancada, também da para adptar ao tipo string
+
+  int mercado_y = LINES - 3;
+  int mercado_x = 75;
+
+  Node_t *atual = orders_list->head;
+  for(int i = 0; i < 4; i++) {
+    display_orders(pedidos_y, pedidos_x, atual->order, offscreen);
+    pedidos_x += 34;
+    atual = atual->next;
+  }
+
+  display_time(pedidos_y, pedidos_x, orders_list->time_left, offscreen);
+
+  mvwprintw(offscreen, 1, 1, "Pedidos:");
+
+  wattron(offscreen, COLOR_PAIR(5));
+  mvwprintw(offscreen, LINES - 1, 0, "Encerrar -> 'q'; Remover -> 'r'; Mercado -> 'm'");
+  wattroff(offscreen, COLOR_PAIR(5));
+
+  copywin(offscreen, stdscr, 0, 0, 0, 0, LINES - 1, COLS - 1, FALSE);
+  refresh();
+  delwin(offscreen);
+}
+
 
 /// Finaliza o uso do ncurses e restaura o terminal ao estado normal
 void end_program() {

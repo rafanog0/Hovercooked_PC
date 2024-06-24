@@ -2,8 +2,6 @@
 #define GAME_H
 
 #define BUFFER 128
-#define MAX_INGREDIENTES 8
-#define BUFFER_INGREDIENTES 32
 #define SUCESSO 1
 #define ERRO -1
 #define COLOR_BROWN 8
@@ -11,12 +9,11 @@
 #define NAO_SELECIONADO 0
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
+#define MAX_ORDERS 15
 
 /// Estrutura que representa um pedido
 typedef struct order_t {
   char name[BUFFER];
-  char ingredients[MAX_INGREDIENTES][BUFFER_INGREDIENTES];
-  int ingredients_quantity;
   int time;
   int points;
 } Order_t;
@@ -30,6 +27,7 @@ typedef struct node_t {
 /// Estrutura que representa uma lista encadeada
 typedef struct list_t {
   Node_t *head;
+  int time_left;
   int size;
 } List_t;
 
