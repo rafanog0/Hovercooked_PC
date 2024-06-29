@@ -110,6 +110,7 @@ void load_title(char title[][MAX_TITLE_LENGTH], int *num_lines) {
   fclose(file);
 }
 
+/// Gerencia o tempo da partida
 void *match_clock(void *arg)
 {
   List_t *orders_list = (List_t *)arg;
@@ -120,7 +121,7 @@ void *match_clock(void *arg)
   }
 }
 
-
+/// Exibe os pedidos na interface
 void display_orders(int y, int x, Order_t p, WINDOW *offscreen) {
     const int largura_caixa = 32; // comprimento da linha horizontal
     int altura_caixa = 7; // altura inicial
@@ -146,7 +147,7 @@ void display_orders(int y, int x, Order_t p, WINDOW *offscreen) {
     mvwprintw(offscreen, y + altura_caixa - 2, x + largura_caixa - 1, "+");
 }
 
-
+/// Exibe as informações da partida na interface
 void display_match_info(int y, int x, int time_left, WINDOW *offscreen)
 {
   char time_left_str[20];
@@ -156,6 +157,7 @@ void display_match_info(int y, int x, int time_left, WINDOW *offscreen)
   mvwprintw(offscreen, y+1, x + 2, time_left_str);
 }
 
+/// Exibe as bancadas na interface
 void display_bench(int y, int x, char* status, WINDOW *offscreen) {
   int len = strlen(status);
   int start_pos = (x + 5) - len/2;
@@ -169,6 +171,8 @@ void display_bench(int y, int x, char* status, WINDOW *offscreen) {
   mvwprintw(offscreen, y + 2, start_pos, "%s", status);
 }
 
+
+/// Exibe a interface gráfica para o usuário
 void display_game(List_t *orders_list) {
 
   WINDOW *offscreen = newwin(LINES, COLS, 0, 0); // Cria uma janela fora da tela
@@ -204,14 +208,12 @@ void display_game(List_t *orders_list) {
 
   pthread_mutex_lock(&ingredient_mutex);
   //REGIAO CRITICA
-  for(int i = 0; i < 2; i++)
+  for(int i = 0; i < benches_n; i++)
   {
     if(benches_ingredient[i].status == AVAILABLE)
       display_bench(bench_ingredients_y, bench_ingredients_x, "AV", offscreen);
-    else if(benches_ingredient[i].status == IN_PROGRESS)
+    else if(benches_ingredient[i].status == IN_USE)
       display_bench(bench_ingredients_y, bench_ingredients_x, "IP", offscreen);
-    else if(benches_ingredient[i].status == DONE)
-      display_bench(bench_ingredients_y, bench_ingredients_x, "DN", offscreen);
     bench_ingredients_y += 6;
   }
   //REGIAO CRITICA
@@ -219,14 +221,12 @@ void display_game(List_t *orders_list) {
 
   pthread_mutex_lock(&kitchen_mutex);
   //REGIAO CRITICA
-  for(int i = 0; i < 2; i++)
+  for(int i = 0; i < benches_n; i++)
   {
     if(benches_kitchen[i].status == AVAILABLE)
       display_bench(bench_kitchen_y, bench_kitchen_x, "AV", offscreen);
-    else if(benches_kitchen[i].status == IN_PROGRESS)
+    else if(benches_kitchen[i].status == IN_USE)
       display_bench(bench_kitchen_y, bench_kitchen_x, "IP", offscreen);
-    else if(benches_kitchen[i].status == DONE)
-      display_bench(bench_kitchen_y, bench_kitchen_x, "DN", offscreen);
     bench_kitchen_x += 15;
   }
   //REGIAO CRITICA

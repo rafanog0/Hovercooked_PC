@@ -10,13 +10,16 @@
 // VARIAVEIS GLOBAIS
 char report_error[BUFFER];
 int game_time;
+int score = 0;
+int benches_n;
+int cooks_n;
 pthread_mutex_t order_mutex;
 pthread_mutex_t ingredient_mutex;
 pthread_mutex_t kitchen_mutex;
 pthread_mutex_t info_mutex;
 prep_bench* benches_ingredient;
 prep_bench* benches_kitchen;
-int score = 0;
+cook* cooks;
 // VARIAVEIS GLOBAIS
 
 /// Cria uma lista encadeada
@@ -149,6 +152,20 @@ void free_list(List_t *list) {
   free(list);
 }
 
+
+/// Busca por um pedido especifico na lista de pedidos
+Node_t *search_order_list(List_t *orders, char *name)
+{
+  Node_t *current = orders->head;
+  while(current != NULL)
+  {
+    if(!strcmp(current->order.name, name))
+      break;
+    current = current->next;
+  }
+  return current;
+}
+
 /// Cria um pedido de exemplo
 Order_t create_sample_order(const char *name, int time, int points) {
   Order_t order;
@@ -158,25 +175,26 @@ Order_t create_sample_order(const char *name, int time, int points) {
   return order;
 }
 
+/// Rotina que cria os pedidos e insere periodicamente, conforme a dificuldade
 void *create_orders(void *arg) {
 
   List_t* orders_list = (List_t *) arg;
   Order_t orders[15];
 
   strcpy(orders[0].name, "Bife Acebolado c Fritas");
-  orders[0].ingredients_time = 20;
-  orders[0].cook_time = 20;
+  orders[0].ingredients_time = 5;
+  orders[0].cook_time = 5;
   orders[0].points = 15;
 
   strcpy(orders[1].name, "Pao de Queijo");
-  orders[1].ingredients_time = 25;
-  orders[1].cook_time = 25;
+  orders[1].ingredients_time = 7;
+  orders[1].cook_time = 7;
   orders[1].points = 10;
 
   strcpy(orders[2].name, "Isca de Peixe");
-  orders[2].ingredients_time = 15;
-  orders[2].cook_time = 15;
-  orders[2].points = 12;
+  orders[2].ingredients_time = 10;
+  orders[2].cook_time = 10;
+  orders[2].points = 120;
 
   strcpy(orders[3].name, "Misto Quente");
   orders[3].ingredients_time = 10;
@@ -256,4 +274,94 @@ void *create_orders(void *arg) {
   }
 
   
+}
+
+// Busca por uma bancada de ingredientes disponivel para começar o pedido
+int search_available_ingredient_bench()
+{
+  pthread_mutex_lock(&ingredient_mutex);
+  for(int i = 0; i<benches_n; i++)
+  {
+    if(benches_ingredient[i].status == AVAILABLE)
+    {
+      benches_ingredient[i].status = IN_USE;
+      pthread_mutex_unlock(&ingredient_mutex);
+      return i;
+    }
+  }
+  pthread_mutex_unlock(&ingredient_mutex);
+  return NOT_FOUND;
+}
+
+// Busca por uma bancada de cozinhas disponivel para começar o pedido
+int search_available_kitchen_bench()
+{
+  pthread_mutex_lock(&kitchen_mutex);
+  for(int i = 0; i<benches_n; i++)
+  {
+    if(benches_kitchen[i].status == AVAILABLE)
+    {
+      benches_kitchen[i].status = IN_USE;
+      pthread_mutex_unlock(&kitchen_mutex);
+      return i;
+    }
+  }
+  pthread_mutex_unlock(&kitchen_mutex);
+  return NOT_FOUND;
+}
+
+
+/// Rotina que permite um cozinheiro cozinhar
+void *cooking(void** args)
+{
+  int ingredient_bench = NOT_FOUND;
+  int kitchen_bench = NOT_FOUND;
+  List_t* orders_list = (List_t *) args[0];
+  int cook_id = *(int*)args[1];
+  
+  Node_t *node_to_be_cooked = search_order_list(orders_list, cooks[cook_id].current_order);
+  if(node_to_be_cooked == NULL)
+    strcpy(report_error, "Order doesnt exist\n");
+  
+  Order_t to_be_cooked = node_to_be_cooked->order;
+
+  while(1)
+  {
+    ingredient_bench = search_available_ingredient_bench(); // Se não tiver bancadas disponiveis, aguarda e tenta novamente
+    if(ingredient_bench != NOT_FOUND) break;
+    sleep(5);
+  }
+
+  sleep(to_be_cooked.ingredients_time); // Tempo para preparar os ingredientes
+
+  pthread_mutex_lock(&ingredient_mutex);
+  benches_ingredient[ingredient_bench].status = AVAILABLE;
+  pthread_mutex_unlock(&ingredient_mutex);
+  
+  while(1)
+  {
+    kitchen_bench = search_available_kitchen_bench(); // Se não tiver bancadas disponiveis, aguarda e tenta novamente
+    if(ingredient_bench != NOT_FOUND) break;
+    sleep(5);
+  }
+
+  sleep(to_be_cooked.cook_time); // Tempo para cozinhar
+
+  pthread_mutex_lock(&kitchen_mutex);
+  benches_kitchen[kitchen_bench].status = AVAILABLE;
+  pthread_mutex_unlock(&kitchen_mutex);
+
+
+  pthread_mutex_lock(&info_mutex);
+  score += to_be_cooked.points;
+  pthread_mutex_unlock(&info_mutex);
+
+  
+  // pthread_mutex_lock(&order_mutex);
+  // remove_by_name(orders_list, to_be_cooked.name);
+  // pthread_mutex_lock(&order_mutex);
+
+  FILE *arq = fopen("Teste", "w");
+  fclose(arq);
+
 }
