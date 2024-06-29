@@ -16,6 +16,7 @@ void end_program();
 void load_title(char title[][MAX_TITLE_LENGTH], int *num_lines);
 void display_game(List_t *orders_list);
 void display_orders(int y, int x, Order_t p, WINDOW *offscreen);
-void match_clock(void *orders_list);
+void display_match_info(int y, int x, int time_left, WINDOW *offscreen);
+void *match_clock(void *orders_list);
 
 #endif // DISPLAY_INFOS_H

@@ -20,6 +20,7 @@ void initialize_screen() {
   start_color();
   init_pair(1, COLOR_RED, COLOR_BLACK);
   noecho();
+  curs_set(FALSE);
   cbreak();
   keypad(stdscr, TRUE);
 }
@@ -109,7 +110,7 @@ void load_title(char title[][MAX_TITLE_LENGTH], int *num_lines) {
   fclose(file);
 }
 
-void match_clock(void *arg)
+void *match_clock(void *arg)
 {
   List_t *orders_list = (List_t *)arg;
   while(1)
@@ -122,7 +123,7 @@ void match_clock(void *arg)
 
 void display_orders(int y, int x, Order_t p, WINDOW *offscreen) {
     const int largura_caixa = 32; // comprimento da linha horizontal
-    int altura_caixa = 6; // altura inicial
+    int altura_caixa = 7; // altura inicial
 
     // Desenha a linha horizontal superior
     mvwprintw(offscreen, y, x, "+");
@@ -133,8 +134,9 @@ void display_orders(int y, int x, Order_t p, WINDOW *offscreen) {
 
     // Desenha o conteúdo da caixa
     mvwprintw(offscreen, y + 1, x, "| Nome: %-23s|", p.name);
-    mvwprintw(offscreen, y + 2, x, "| Tempo preparo: %-14d|", p.time);
-    mvwprintw(offscreen, y + 3, x, "| Pontos: %-21d|", p.points);
+    mvwprintw(offscreen, y + 2, x, "| Tempo cozinhar: %-13d|", p.cook_time);
+    mvwprintw(offscreen, y + 3, x, "| Tempo ingredientes: %-9d|", p.ingredients_time);
+    mvwprintw(offscreen, y + 4, x, "| Pontos: %-21d|", p.points);
 
     // Desenha a linha horizontal inferior
     mvwprintw(offscreen, y + altura_caixa - 2, x, "+");
@@ -145,11 +147,26 @@ void display_orders(int y, int x, Order_t p, WINDOW *offscreen) {
 }
 
 
-void display_time(int y, int x, int time_left, WINDOW *offscreen)
+void display_match_info(int y, int x, int time_left, WINDOW *offscreen)
 {
   char time_left_str[20];
   snprintf(time_left_str, sizeof(time_left_str), "Tempo: %ds", time_left);
   mvwprintw(offscreen, y, x + 2, time_left_str);
+  snprintf(time_left_str, sizeof(time_left_str), "Score: %d", score);
+  mvwprintw(offscreen, y+1, x + 2, time_left_str);
+}
+
+void display_bench(int y, int x, char* status, WINDOW *offscreen) {
+  int len = strlen(status);
+  int start_pos = (x + 5) - len/2;
+
+  mvwprintw(offscreen, y, x,     "+----------+");
+  mvwprintw(offscreen, y + 1, x, "|          |");
+  mvwprintw(offscreen, y + 2, x, "|          |");
+  mvwprintw(offscreen, y + 3, x, "|          |");
+  mvwprintw(offscreen, y + 4, x, "+----------+");
+
+  mvwprintw(offscreen, y + 2, start_pos, "%s", status);
 }
 
 void display_game(List_t *orders_list) {
@@ -166,31 +183,52 @@ void display_game(List_t *orders_list) {
 
   werase(offscreen); // Limpa a janela offscreen
 
-  int pedidos_y = 2;
-  int pedidos_x = 2;
+  int orders_y = 2;
+  int orders_x = 2;
 
-  int bancada_y = 20;
-  int bancada_x = COLS - 13;
-  int bancada_num = 1; // Conteúdo escrito na bancada, também da para adptar ao tipo string
+  int bench_y = 16;
+  int bench_x = 7;
+
+  int time_x = 180;
+  int time_y = 2;
 
   int mercado_y = LINES - 3;
   int mercado_x = 75;
 
+  pthread_mutex_lock(&bench_mutex);
+  //REGIAO CRITICA
+  for(int i = 0; i < 2; i++)
+  {
+    if(benches[i].status == AVAILABLE)
+      display_bench(bench_y, bench_x, "AV", offscreen);
+    else if(benches[i].status == IN_PROGRESS)
+      display_bench(bench_y, bench_x, "IP", offscreen);
+    else if(benches[i].status == DONE)
+      display_bench(bench_y, bench_x, "DN", offscreen);
+    bench_y += 6;
+  }
+  //REGIAO CRITICA
+  pthread_mutex_unlock(&bench_mutex);
+
+  pthread_mutex_lock(&order_mutex);
+  //REGIAO CRITICA
   Node_t *atual = orders_list->head;
-  for(int i = 0; i < 4; i++) {
-    display_orders(pedidos_y, pedidos_x, atual->order, offscreen);
-    pedidos_x += 34;
+  for(int i = 0; i < orders_list->n_orders && i < 4; i++) {
+    display_orders(orders_y, orders_x, atual->order, offscreen);
+
+    orders_x += 34;
     atual = atual->next;
   }
+  //REGIAO CRITICA
+  pthread_mutex_unlock(&order_mutex);
 
-  display_time(pedidos_y, pedidos_x, orders_list->time_left, offscreen);
+  //REGIAO CRITICA
+  pthread_mutex_lock(&info_mutex);
+  display_match_info(time_y, time_x, orders_list->time_left, offscreen);
+  pthread_mutex_unlock(&info_mutex);
+  //REGIAO CRITICA
 
   mvwprintw(offscreen, 1, 1, "Pedidos:");
-
-  wattron(offscreen, COLOR_PAIR(5));
-  mvwprintw(offscreen, LINES - 1, 0, "Encerrar -> 'q'; Remover -> 'r'; Mercado -> 'm'");
-  wattroff(offscreen, COLOR_PAIR(5));
-
   copywin(offscreen, stdscr, 0, 0, 0, 0, LINES - 1, COLS - 1, FALSE);
   refresh();
   delwin(offscreen);

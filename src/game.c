@@ -1,3 +1,4 @@
+#include "../inc/display_infos.h"
 #include "../inc/game.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +10,11 @@
 // VARIAVEIS GLOBAIS
 char report_error[BUFFER];
 int game_time;
-
+pthread_mutex_t order_mutex;
+pthread_mutex_t bench_mutex;
+pthread_mutex_t info_mutex;
+prep_bench* benches;
+int score = 0;
 // VARIAVEIS GLOBAIS
 
 /// Cria uma lista encadeada
@@ -23,6 +28,7 @@ List_t *create_list() {
 
   list->head = NULL;
   list->size = 0;
+  list->n_orders = 0;
 
   return list;
 }
@@ -39,13 +45,13 @@ int insert_in_list(List_t *list, Order_t order) {
   new_node->order = order;
   new_node->next = NULL;
 
-  if (list->head == NULL || list->head->order.time >= order.time) {
+  if (list->head == NULL || list->head->order.cook_time >= order.cook_time) {
     new_node->next = list->head;
     list->head = new_node;
   } else {
     Node_t *current = list->head;
 
-    while (current->next != NULL && current->next->order.time < order.time) {
+    while (current->next != NULL && current->next->order.cook_time < order.cook_time) {
       current = current->next;
     }
 
@@ -118,7 +124,7 @@ void print_list(List_t *list) {
   while (current != NULL) {
     printf("Nome: %s\n", current->order.name);
     printf("\n");
-    printf("Tempo: %d\n", current->order.time);
+    printf("Tempo: %d\n", current->order.cook_time);
     printf("Pontos: %d\n", current->order.points);
     printf("\n");
     current = current->next;
@@ -145,77 +151,107 @@ void free_list(List_t *list) {
 Order_t create_sample_order(const char *name, int time, int points) {
   Order_t order;
   strncpy(order.name, name, BUFFER);
-  order.time = time;
+  order.cook_time = time;
   order.points = points;
   return order;
 }
 
-void create_orders(List_t *orders_list) {
+void *create_orders(void *arg) {
 
+  List_t* orders_list = (List_t *) arg;
   Order_t orders[15];
 
   strcpy(orders[0].name, "Bife Acebolado c Fritas");
-  orders[0].time = 20;
+  orders[0].ingredients_time = 20;
+  orders[0].cook_time = 20;
   orders[0].points = 15;
 
-  strcpy(orders[1].name, "Pão de Queijo");
-  orders[1].time = 25;
+  strcpy(orders[1].name, "Pao de Queijo");
+  orders[1].ingredients_time = 25;
+  orders[1].cook_time = 25;
   orders[1].points = 10;
 
   strcpy(orders[2].name, "Isca de Peixe");
-  orders[2].time = 15;
+  orders[2].ingredients_time = 15;
+  orders[2].cook_time = 15;
   orders[2].points = 12;
 
   strcpy(orders[3].name, "Misto Quente");
-  orders[3].time = 10;
+  orders[3].ingredients_time = 10;
+  orders[3].cook_time = 10;
   orders[3].points = 7;
 
   strcpy(orders[4].name, "Feijoada");
-  orders[4].time = 40;
+  orders[4].ingredients_time = 40;
+  orders[4].cook_time = 40;
   orders[4].points = 25;
 
-  strcpy(orders[5].name, "Moqueca de Camarão");
-  orders[5].time = 35;
+  strcpy(orders[5].name, "Moqueca de Camarao");
+  orders[5].ingredients_time = 35;
+  orders[5].cook_time = 35;
   orders[5].points = 22;
 
   strcpy(orders[6].name, "Brigadeiro");
-  orders[6].time = 20;
+  orders[6].ingredients_time = 20;
+  orders[6].cook_time = 20;
   orders[6].points = 10;
 
   strcpy(orders[7].name, "Escondidinho de Carne");
-  orders[7].time = 30;
+  orders[7].ingredients_time = 30;
+  orders[7].cook_time = 30;
   orders[7].points = 18;
 
   strcpy(orders[8].name, "Tapioca");
-  orders[8].time = 15;
+  orders[8].ingredients_time = 15;
+  orders[8].cook_time = 15;
   orders[8].points = 9;
 
-  strcpy(orders[9].name, "Vatapá");
-  orders[9].time = 25;
+  strcpy(orders[9].name, "Vatapa");
+  orders[9].ingredients_time = 25;
+  orders[9].cook_time = 25;
   orders[9].points = 20;
 
   strcpy(orders[10].name, "Coxinha");
-  orders[10].time = 20;
+  orders[10].ingredients_time = 20;
+  orders[10].cook_time = 20;
   orders[10].points = 14;
 
   strcpy(orders[11].name, "Farofa");
-  orders[11].time = 10;
+  orders[11].ingredients_time = 10;
+  orders[11].cook_time = 10;
   orders[11].points = 8;
 
   strcpy(orders[12].name, "Acarajé");
-  orders[12].time = 30;
+  orders[12].ingredients_time = 30;
+  orders[12].cook_time = 30;
   orders[12].points = 18;
 
-  strcpy(orders[13].name, "Bobó de Camarão");
-  orders[13].time = 35;
+  strcpy(orders[13].name, "Bobo de Camarao");
+  orders[13].ingredients_time = 35;
+  orders[13].cook_time = 35;
   orders[13].points = 22;
 
   strcpy(orders[14].name, "Quindim");
-  orders[14].time = 20;
+  orders[14].ingredients_time = 20;
+  orders[14].cook_time = 20;
   orders[14].points = 15;
+  pthread_mutex_lock(&order_mutex);
+  insert_in_list(orders_list, orders[0]);
+  insert_in_list(orders_list, orders[1]);
+  insert_in_list(orders_list, orders[2]);
+  orders_list->n_orders = 3;
+  pthread_mutex_unlock(&order_mutex);
 
-  for(int i = 0; i < MAX_ORDERS; i++)
+  for(int i = 3; i < MAX_ORDERS; i++)
+  {
+    sleep(orders_list->create_order_time);
+    pthread_mutex_lock(&order_mutex);
+    //REGIAO CRITICA
+    orders_list->n_orders++;
     insert_in_list(orders_list, orders[i]);
+    //REGIAO CRITICA
+    pthread_mutex_unlock(&order_mutex);
+  }
 
   
 }

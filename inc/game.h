@@ -1,6 +1,8 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include<pthread.h>
+
 #define BUFFER 128
 #define SUCESSO 1
 #define ERRO -1
@@ -10,11 +12,15 @@
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 #define MAX_ORDERS 15
+#define AVAILABLE 0
+#define IN_PROGRESS 1
+#define DONE 2
 
 /// Estrutura que representa um pedido
 typedef struct order_t {
   char name[BUFFER];
-  int time;
+  int ingredients_time;
+  int cook_time;
   int points;
 } Order_t;
 
@@ -28,12 +34,27 @@ typedef struct node_t {
 typedef struct list_t {
   Node_t *head;
   int time_left;
+  int create_order_time;
+  int n_orders;
   int size;
 } List_t;
 
+typedef struct prep_bench{
+  char order_in[BUFFER];
+  int status;
+}prep_bench;
+
 extern char report_error[BUFFER];
+extern int game_time;
+extern int score;
+extern pthread_mutex_t order_mutex;
+extern pthread_mutex_t bench_mutex;
+extern pthread_mutex_t info_mutex;
+extern prep_bench* benches;
+
 
 List_t *create_list();
+void *create_orders(void *arg);
 int insert_in_list(List_t *list, Order_t order);
 int remove_by_name(List_t *list, char *name);
 int remove_head(List_t *list);
