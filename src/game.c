@@ -11,9 +11,11 @@
 char report_error[BUFFER];
 int game_time;
 pthread_mutex_t order_mutex;
-pthread_mutex_t bench_mutex;
+pthread_mutex_t ingredient_mutex;
+pthread_mutex_t kitchen_mutex;
 pthread_mutex_t info_mutex;
-prep_bench* benches;
+prep_bench* benches_ingredient;
+prep_bench* benches_kitchen;
 int score = 0;
 // VARIAVEIS GLOBAIS
 

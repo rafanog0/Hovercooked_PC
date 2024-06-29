@@ -186,8 +186,11 @@ void display_game(List_t *orders_list) {
   int orders_y = 2;
   int orders_x = 2;
 
-  int bench_y = 16;
-  int bench_x = 7;
+  int bench_ingredients_y = 16;
+  int bench_ingredients_x = 7;
+
+  int bench_kitchen_y = 44;
+  int bench_kitchen_x = 35;
 
   int time_x = 180;
   int time_y = 2;
@@ -195,20 +198,39 @@ void display_game(List_t *orders_list) {
   int mercado_y = LINES - 3;
   int mercado_x = 75;
 
-  pthread_mutex_lock(&bench_mutex);
+  mvwprintw(offscreen, 1, 1, "Pedidos:");
+  mvwprintw(offscreen, bench_kitchen_y, bench_ingredients_x + 15, "Cozinhas:");
+  mvwprintw(offscreen, bench_ingredients_y - 2, bench_ingredients_x - 5, "Ingredientes:");
+
+  pthread_mutex_lock(&ingredient_mutex);
   //REGIAO CRITICA
   for(int i = 0; i < 2; i++)
   {
-    if(benches[i].status == AVAILABLE)
-      display_bench(bench_y, bench_x, "AV", offscreen);
-    else if(benches[i].status == IN_PROGRESS)
-      display_bench(bench_y, bench_x, "IP", offscreen);
-    else if(benches[i].status == DONE)
-      display_bench(bench_y, bench_x, "DN", offscreen);
-    bench_y += 6;
+    if(benches_ingredient[i].status == AVAILABLE)
+      display_bench(bench_ingredients_y, bench_ingredients_x, "AV", offscreen);
+    else if(benches_ingredient[i].status == IN_PROGRESS)
+      display_bench(bench_ingredients_y, bench_ingredients_x, "IP", offscreen);
+    else if(benches_ingredient[i].status == DONE)
+      display_bench(bench_ingredients_y, bench_ingredients_x, "DN", offscreen);
+    bench_ingredients_y += 6;
   }
   //REGIAO CRITICA
-  pthread_mutex_unlock(&bench_mutex);
+  pthread_mutex_unlock(&ingredient_mutex);
+
+  pthread_mutex_lock(&kitchen_mutex);
+  //REGIAO CRITICA
+  for(int i = 0; i < 2; i++)
+  {
+    if(benches_kitchen[i].status == AVAILABLE)
+      display_bench(bench_kitchen_y, bench_kitchen_x, "AV", offscreen);
+    else if(benches_kitchen[i].status == IN_PROGRESS)
+      display_bench(bench_kitchen_y, bench_kitchen_x, "IP", offscreen);
+    else if(benches_kitchen[i].status == DONE)
+      display_bench(bench_kitchen_y, bench_kitchen_x, "DN", offscreen);
+    bench_kitchen_x += 15;
+  }
+  //REGIAO CRITICA
+  pthread_mutex_unlock(&kitchen_mutex);
 
   pthread_mutex_lock(&order_mutex);
   //REGIAO CRITICA
@@ -228,7 +250,6 @@ void display_game(List_t *orders_list) {
   pthread_mutex_unlock(&info_mutex);
   //REGIAO CRITICA
 
-  mvwprintw(offscreen, 1, 1, "Pedidos:");
   copywin(offscreen, stdscr, 0, 0, 0, 0, LINES - 1, COLS - 1, FALSE);
   refresh();
   delwin(offscreen);

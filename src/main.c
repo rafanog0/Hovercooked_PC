@@ -14,7 +14,8 @@ int main() {
   pthread_t timer;
   pthread_t pedidos;
   pthread_mutex_init(&order_mutex, NULL);
-  pthread_mutex_init(&bench_mutex, NULL);
+  pthread_mutex_init(&ingredient_mutex, NULL);
+  pthread_mutex_init(&kitchen_mutex, NULL);
   pthread_mutex_init(&info_mutex, NULL);
   List_t *orders_list = (List_t*) malloc(sizeof(List_t));
 
@@ -22,19 +23,22 @@ int main() {
   {
     orders_list->time_left = 100;
     orders_list->create_order_time = 7;
-    benches = (prep_bench*) malloc(2 * sizeof(prep_bench)); // TODO: número de bancadas relativo a dificuldade
+    benches_ingredient = (prep_bench*) malloc(2 * sizeof(prep_bench)); // TODO: número de bancadas relativo a dificuldade
+    benches_kitchen = (prep_bench*) malloc(2 * sizeof(prep_bench)); // TODO: número de bancadas relativo a dificuldade
   }
   else if(choice == 1) // TODO: alterar para ser compativel com a estrtura choice_t
   {
     orders_list->time_left = 200;
     orders_list->create_order_time = 14;
-    benches = (prep_bench*) malloc(2 * sizeof(prep_bench));
+    benches_ingredient = (prep_bench*) malloc(2 * sizeof(prep_bench));
+    benches_kitchen = (prep_bench*) malloc(2 * sizeof(prep_bench));
   }
   else if(choice == 2)
   {
     orders_list->time_left = 300;
     orders_list->create_order_time = 21;
-    benches = (prep_bench*) malloc(2 * sizeof(prep_bench));
+    benches_ingredient = (prep_bench*) malloc(2 * sizeof(prep_bench));
+    benches_kitchen = (prep_bench*) malloc(2 * sizeof(prep_bench));
   }
 
   pthread_create(&timer, NULL, match_clock, (void *)orders_list);
@@ -45,7 +49,8 @@ int main() {
     display_game(orders_list);
 
   pthread_mutex_destroy(&order_mutex);
-  pthread_mutex_destroy(&bench_mutex);
+  pthread_mutex_destroy(&ingredient_mutex);
+  pthread_mutex_destroy(&kitchen_mutex);
   pthread_mutex_destroy(&info_mutex);
   end_program();
   return 0;

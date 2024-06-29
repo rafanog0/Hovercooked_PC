@@ -48,9 +48,11 @@ extern char report_error[BUFFER];
 extern int game_time;
 extern int score;
 extern pthread_mutex_t order_mutex;
-extern pthread_mutex_t bench_mutex;
+extern pthread_mutex_t ingredient_mutex;
+extern pthread_mutex_t kitchen_mutex;
 extern pthread_mutex_t info_mutex;
-extern prep_bench* benches;
+extern prep_bench* benches_ingredient;
+extern prep_bench* benches_kitchen;
 
 
 List_t *create_list();
