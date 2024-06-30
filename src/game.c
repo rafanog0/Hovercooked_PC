@@ -33,8 +33,6 @@ List_t *create_list() {
 
   list->head = NULL;
   list->size = 0;
-  list->n_orders = 0;
-
   return list;
 }
 
@@ -67,8 +65,6 @@ int insert_in_list(List_t *list, Order_t order) {
 
     return SUCESSO;
 }
-
-
 
 /// Remove um pedido da lista encadeada com base no nome
 int remove_by_name(List_t *list, char *name) {
@@ -262,7 +258,6 @@ void *create_orders(void *arg) {
   insert_in_list(orders_list, orders[2]);
   orders_list->size = 3;
   pthread_mutex_unlock(&order_mutex);
-
 
   for(int i = 3; i < MAX_ORDERS; i++)
   {
