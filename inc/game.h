@@ -2,7 +2,6 @@
 #define GAME_H
 
 #include<pthread.h>
-
 #define BUFFER 128
 
 #define SUCESSO 1
@@ -62,6 +61,8 @@ extern int game_time;
 extern int score;
 extern int benches_n;
 extern int cooks_n;
+extern int cook_choice;
+extern Order_t order_choice;
 extern pthread_mutex_t order_mutex;
 extern pthread_mutex_t ingredient_mutex;
 extern pthread_mutex_t kitchen_mutex;
@@ -82,5 +83,6 @@ int size(List_t *list);
 void print_list(List_t *list);
 void free_list(List_t *list);
 Order_t create_sample_order(const char *name, int time, int points);
+void *managing(void *arg);
 
 #endif // GAME_H

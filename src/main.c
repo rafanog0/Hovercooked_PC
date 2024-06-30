@@ -18,6 +18,7 @@ int main() {
   pthread_t timer;
   pthread_t orders;
   pthread_t *chef;
+  pthread_t manager;
   pthread_mutex_init(&order_mutex, NULL);
   pthread_mutex_init(&ingredient_mutex, NULL);
   pthread_mutex_init(&kitchen_mutex, NULL);
@@ -89,9 +90,11 @@ int main() {
   strcpy(cooks[2].current_order, "Isca de Peixe");
   //Essas instruções são papel do gerente (TODO: Gerente)
 
-  pthread_create(&chef[0], NULL, cooking, args_cooking_f);
-  pthread_create(&chef[1], NULL, cooking, args_cooking_s);
-  pthread_create(&chef[2], NULL, cooking, args_cooking_x);
+  // pthread_create(&chef[0], NULL, cooking, args_cooking_f);
+  // pthread_create(&chef[1], NULL, cooking, args_cooking_s);
+  // pthread_create(&chef[2], NULL, cooking, args_cooking_x);
+
+  pthread_create(&manager, NULL, managing, (void *)orders_list);
 
   while(orders_list->time_left > 0)
     display_game(orders_list);

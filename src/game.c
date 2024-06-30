@@ -13,6 +13,10 @@ int game_time;
 int score = 0;
 int benches_n;
 int cooks_n;
+int cook_choice;
+Order_t order_choice;
+
+
 pthread_mutex_t order_mutex;
 pthread_mutex_t ingredient_mutex;
 pthread_mutex_t kitchen_mutex;
@@ -356,4 +360,84 @@ void *cooking(void** args)
   int ret = remove_by_name(orders_list, to_be_cooked.name);
   pthread_mutex_unlock(&order_mutex);
 
+}
+
+
+void print_menu(WINDOW *menu_win, int highlight, char *choices[], int n_choices) {
+    int x, y, i;
+    
+    x = 2;
+    y = 2;
+    box(menu_win, 0, 0);
+    for(i = 0; i < n_choices; ++i) {
+        if(highlight == i + 1) {
+            wattron(menu_win, A_REVERSE);
+            mvwprintw(menu_win, y, x, "%s", choices[i]);
+            wattroff(menu_win, A_REVERSE);
+        } else
+            mvwprintw(menu_win, y, x, "%s", choices[i]);
+        ++y;
+    }
+    wrefresh(menu_win);
+}
+
+void *managing(void *arg) {
+    // Inicializa a janela e outras variáveis
+
+    char c;
+    
+    while(1) {
+        c = getch();
+        if(menu_n == ORDERS_MENU)
+        {
+          switch(c) {
+              case '1':
+                  highlight_manager = 1;
+                  break;
+              case '2':
+                  highlight_manager = 2;
+                  break;
+              case '3':
+                  highlight_manager = 3;
+                  break;
+              case '4':
+                  highlight_manager = 3;
+                  break;
+              case '5':
+                  highlight_manager = 3;
+                  break;
+              case 10: // Enter key
+                  choice_manager = highlight_manager;
+                  menu_n = COOKS_MENU;
+                  break;
+              default:
+                  // refresh();
+                  break;
+          }
+        }
+        else
+          switch(c) {
+              case '1':
+                  highlight_manager = 1;
+                  break;
+              case '2':
+                  highlight_manager = 2;
+                  break;
+              case '3':
+                  highlight_manager = 3;
+                  break;
+              case 10: // Enter key
+                  choice_manager = highlight_manager;
+                  cook_choice = highlight_manager - 1;
+                  menu_n = ORDERS_MENU;
+
+                  break;
+              default:
+                  // refresh();
+                  break;
+          }
+        {
+
+        }
+    }
 }

@@ -7,11 +7,19 @@
 #include <string.h>
 #include <unistd.h>
 
+//VARIAVEIS GLOBAIS
+int menu_n = COOKS_MENU;
+int highlight_manager = 1;
+int choice_manager = 0;
+//VARIAVEIS GLOBAIS
+
+
 /// Estrutura que representa uma escolha do menu, com título e tempo
 struct choice_t {
   char title[MAX_TITLE_LENGTH];
   int time;
 };
+
 
 /// Inicializa a tela ncurses e configurações de entrada
 void initialize_screen() {
@@ -171,6 +179,68 @@ void display_bench(int y, int x, char* status, WINDOW *offscreen) {
   mvwprintw(offscreen, y + 2, start_pos, "%s", status);
 }
 
+/// Desenha caixa de opções de pedidos para o usuario 
+void draw_center_box_with_orders(WINDOW *win, List_t* orders_list, int num_options) {
+    int box_width = 20;
+    int box_height = num_options+2; // 2 linhas para bordas superior e inferior
+
+    int center_y = LINES / 2;
+    int center_x = COLS / 2;
+    int start_y = center_y - box_height / 2;
+    int start_x = center_x - box_width / 2;
+
+    // Desenhar borda superior
+    mvwprintw(win, start_y, start_x, "+-------------------------+");
+
+    int i = 0;
+    Node_t *current = orders_list->head;
+    // Desenhar opções
+    while(current != NULL && i < MAX_DISPLAYED_ORDERS)
+    {
+      if(highlight_manager == i + 1)
+      {
+        wattron(win, A_REVERSE);
+        mvwprintw(win, start_y + 1 + i, start_x, "|%-24s |", current->order.name);
+        order_choice = current->order;
+        wattroff(win, A_REVERSE);
+      }
+      else
+        mvwprintw(win, start_y + 1 + i, start_x, "|%-24s |", current->order.name);
+      i++;
+      current = current->next;
+    }
+
+    // Desenhar borda inferior
+    mvwprintw(win, start_y + box_height - 1, start_x, "+-------------------------+");
+}
+
+void draw_center_box_with_cooks(WINDOW *win) {
+    int box_width = 20;
+    int box_height = cooks_n + 2; // 2 linhas para bordas superior e inferior
+    int center_y = LINES / 2;
+    int center_x = COLS / 2;
+    int start_y = center_y - box_height / 2;
+    int start_x = center_x - box_width / 2;
+
+    // Desenhar borda superior
+    mvwprintw(win, start_y, start_x, "+-------------------------+");
+
+    // Desenhar opções
+    for (int i = 0; i < cooks_n; i++) {
+      if(highlight_manager == i+1)
+      {
+        wattron(win, A_REVERSE);
+        mvwprintw(win, start_y + 1 + i, start_x, "|Cozinheiro %d             |", i+1);
+        wattroff(win, A_REVERSE);
+      }
+      else
+        mvwprintw(win, start_y + 1 + i, start_x, "|Cozinheiro %d             |", i+1);
+
+    }
+
+    // Desenhar borda inferior
+    mvwprintw(win, start_y + box_height - 1, start_x, "+-------------------------+");
+}
 
 /// Exibe a interface gráfica para o usuário
 void display_game(List_t *orders_list) {
@@ -239,7 +309,7 @@ void display_game(List_t *orders_list) {
     //REGIAO CRITICA
     Node_t *atual = orders_list->head;
     int i = 0;
-    while(atual != NULL && i < 4) {
+    while(atual != NULL && i < MAX_DISPLAYED_ORDERS) {
       display_orders(orders_y, orders_x, atual->order, offscreen);
 
       orders_x += 34;
@@ -256,11 +326,20 @@ void display_game(List_t *orders_list) {
   pthread_mutex_unlock(&info_mutex);
   //REGIAO CRITICA
 
+  if(menu_n == COOKS_MENU)
+    draw_center_box_with_cooks(offscreen);
+  else
+  {
+    if(orders_list->size <= MAX_DISPLAYED_ORDERS)
+      draw_center_box_with_orders(offscreen, orders_list, orders_list->size);
+    else
+      draw_center_box_with_orders(offscreen, orders_list, MAX_DISPLAYED_ORDERS);
+  }
+
   copywin(offscreen, stdscr, 0, 0, 0, 0, LINES - 1, COLS - 1, FALSE);
   refresh();
   delwin(offscreen);
 }
-
 
 /// Finaliza o uso do ncurses e restaura o terminal ao estado normal
 void end_program() {
