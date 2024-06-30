@@ -24,12 +24,18 @@
 
 #define NOT_FOUND 404
 
+#define TAKEN 1
+#define NOT_TAKEN 0
+#define BUSY 1
+#define NOT_BUSY 0
+
 /// Estrutura que representa um pedido
 typedef struct order_t {
   char name[BUFFER];
   int ingredients_time;
   int cook_time;
   int points;
+  int taken;
 } Order_t;
 
 /// Estrutura que representa um nó da lista encadeada
@@ -62,18 +68,20 @@ extern int score;
 extern int benches_n;
 extern int cooks_n;
 extern int cook_choice;
+extern int busy_cooks[];
 extern Order_t order_choice;
 extern pthread_mutex_t order_mutex;
 extern pthread_mutex_t ingredient_mutex;
 extern pthread_mutex_t kitchen_mutex;
 extern pthread_mutex_t info_mutex;
+extern pthread_mutex_t cook_mutex;
 extern prep_bench *benches_ingredient;
 extern prep_bench *benches_kitchen;
 extern cook *cooks;
 
 List_t *create_list();
 void *create_orders(void *arg);
-void *cooking(void **arg);
+void *cooking(void *arg);
 int insert_in_list(List_t *list, Order_t order);
 int remove_by_name(List_t *list, char *name);
 int remove_head(List_t *list);

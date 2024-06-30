@@ -6,7 +6,7 @@
 
 #define MAX_TITLE_LINES 10
 #define MAX_TITLE_LENGTH 100
-#define TITLE_FILE "assets/title.txt"
+#define TITLE_FILE "./assets/title.txt"
 #define MAX_DISPLAYED_ORDERS 5
 #define COOKS_MENU 0
 #define ORDERS_MENU 1
@@ -14,6 +14,7 @@
 #define MEDIUM 2
 #define HARD 3
 #define QUIT 4
+
 
 extern int menu_n;
 extern int highlight_manager;
