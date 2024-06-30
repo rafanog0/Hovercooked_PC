@@ -40,34 +40,35 @@ List_t *create_list() {
 
 /// Insere um pedido na lista encadeada
 int insert_in_list(List_t *list, Order_t order) {
-  Node_t *new_node = (Node_t *)malloc(sizeof(Node_t));
+    Node_t *new_node = (Node_t *)malloc(sizeof(Node_t));
 
-  if (new_node == NULL) {
-    strcpy(report_error, "Erro ao alocar memória para o novo nó;\n");
-    return ERRO;
-  }
-
-  new_node->order = order;
-  new_node->next = NULL;
-
-  if (list->head == NULL || list->head->order.cook_time >= order.cook_time) {
-    new_node->next = list->head;
-    list->head = new_node;
-  } else {
-    Node_t *current = list->head;
-
-    while (current->next != NULL && current->next->order.cook_time < order.cook_time) {
-      current = current->next;
+    if (new_node == NULL) {
+        strcpy(report_error, "Erro ao alocar memória para o novo nó;\n");
+        return ERRO;
     }
 
-    new_node->next = current->next;
-    current->next = new_node;
-  }
+    new_node->order = order;
+    new_node->next = NULL;
 
-  list->size++;
+    if (list->head == NULL) {
+        // Lista vazia, insere como primeiro elemento
+        list->head = new_node;
+    } else {
+        // Percorre a lista até o último nó
+        Node_t *current = list->head;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        // Insere no final da lista
+        current->next = new_node;
+    }
 
-  return SUCESSO;
+    list->size++;
+
+    return SUCESSO;
 }
+
+
 
 /// Remove um pedido da lista encadeada com base no nome
 int remove_by_name(List_t *list, char *name) {
@@ -259,15 +260,16 @@ void *create_orders(void *arg) {
   insert_in_list(orders_list, orders[0]);
   insert_in_list(orders_list, orders[1]);
   insert_in_list(orders_list, orders[2]);
-  orders_list->n_orders = 3;
+  orders_list->size = 3;
   pthread_mutex_unlock(&order_mutex);
+
 
   for(int i = 3; i < MAX_ORDERS; i++)
   {
     sleep(orders_list->create_order_time);
     pthread_mutex_lock(&order_mutex);
     //REGIAO CRITICA
-    orders_list->n_orders++;
+    orders_list->size++;
     insert_in_list(orders_list, orders[i]);
     //REGIAO CRITICA
     pthread_mutex_unlock(&order_mutex);
@@ -341,7 +343,7 @@ void *cooking(void** args)
   while(1)
   {
     kitchen_bench = search_available_kitchen_bench(); // Se não tiver bancadas disponiveis, aguarda e tenta novamente
-    if(ingredient_bench != NOT_FOUND) break;
+    if(kitchen_bench != NOT_FOUND) break;
     sleep(5);
   }
 
@@ -351,17 +353,12 @@ void *cooking(void** args)
   benches_kitchen[kitchen_bench].status = AVAILABLE;
   pthread_mutex_unlock(&kitchen_mutex);
 
-
   pthread_mutex_lock(&info_mutex);
   score += to_be_cooked.points;
   pthread_mutex_unlock(&info_mutex);
-
   
-  // pthread_mutex_lock(&order_mutex);
-  // remove_by_name(orders_list, to_be_cooked.name);
-  // pthread_mutex_lock(&order_mutex);
-
-  FILE *arq = fopen("Teste", "w");
-  fclose(arq);
+  pthread_mutex_lock(&order_mutex);
+  int ret = remove_by_name(orders_list, to_be_cooked.name);
+  pthread_mutex_unlock(&order_mutex);
 
 }

@@ -12,6 +12,9 @@ int main() {
 
   initialize_screen();
   int choice = display_menu();
+  if(choice == 3)
+    return 0;
+  
   pthread_t timer;
   pthread_t orders;
   pthread_t *chef;
@@ -20,6 +23,8 @@ int main() {
   pthread_mutex_init(&kitchen_mutex, NULL);
   pthread_mutex_init(&info_mutex, NULL);
   List_t *orders_list = (List_t*) malloc(sizeof(List_t));
+  if(orders_list == NULL)
+    return ERRO;
 
   // TODO: Dificuldade ou Usuario definem o número de bancadas e cozinheiros
   benches_n = 2; 
@@ -42,6 +47,8 @@ int main() {
     orders_list->create_order_time = 7;
     benches_ingredient = (prep_bench*) malloc(2 * sizeof(prep_bench)); // TODO: número de bancadas relativo a dificuldade
     benches_kitchen = (prep_bench*) malloc(2 * sizeof(prep_bench)); // TODO: número de bancadas relativo a dificuldade
+    if(benches_ingredient == NULL || benches_kitchen == NULL)
+      return ERRO;
   }
   else if(choice == 1) // TODO: alterar para ser compativel com a estrtura choice_t
   {
@@ -93,6 +100,7 @@ int main() {
   pthread_mutex_destroy(&ingredient_mutex);
   pthread_mutex_destroy(&kitchen_mutex);
   pthread_mutex_destroy(&info_mutex);
+  free_list(orders_list);
   end_program();
   return 0;
 }

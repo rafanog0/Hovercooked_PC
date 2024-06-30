@@ -44,7 +44,6 @@ typedef struct list_t {
   Node_t *head;
   int time_left;
   int create_order_time;
-  int n_orders;
   int size;
 } List_t;
 

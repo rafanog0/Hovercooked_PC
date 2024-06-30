@@ -232,17 +232,23 @@ void display_game(List_t *orders_list) {
   //REGIAO CRITICA
   pthread_mutex_unlock(&kitchen_mutex);
 
-  pthread_mutex_lock(&order_mutex);
-  //REGIAO CRITICA
-  Node_t *atual = orders_list->head;
-  for(int i = 0; i < orders_list->n_orders && i < 4; i++) {
-    display_orders(orders_y, orders_x, atual->order, offscreen);
 
-    orders_x += 34;
-    atual = atual->next;
+  if(!is_empty(orders_list))
+  {
+    pthread_mutex_lock(&order_mutex);
+    //REGIAO CRITICA
+    Node_t *atual = orders_list->head;
+    int i = 0;
+    while(atual != NULL && i < 4) {
+      display_orders(orders_y, orders_x, atual->order, offscreen);
+
+      orders_x += 34;
+      atual = atual->next;
+      i++;
+    }
+    //REGIAO CRITICA
+    pthread_mutex_unlock(&order_mutex);
   }
-  //REGIAO CRITICA
-  pthread_mutex_unlock(&order_mutex);
 
   //REGIAO CRITICA
   pthread_mutex_lock(&info_mutex);
