@@ -7,6 +7,7 @@
 #define MAX_TITLE_LINES 10
 #define MAX_TITLE_LENGTH 100
 #define TITLE_FILE "./assets/title.txt"
+#define SCORE_FILE "./assets/score.txt"
 #define MAX_DISPLAYED_ORDERS 5
 #define COOKS_MENU 0
 #define ORDERS_MENU 1

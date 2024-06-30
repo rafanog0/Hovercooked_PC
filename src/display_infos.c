@@ -19,7 +19,7 @@ struct choice_t {
   int time;
 };
 
-/// Inicializa a tela ncurses e configurações de entrada
+/// Inicializa a tela ncurses e configuracões de entrada
 void initialize_screen() {
   setlocale(LC_ALL, "");
   initscr();
@@ -41,12 +41,10 @@ Difficulty_t display_menu() {
 
   load_title(title, &num_title_lines);
 
-  Difficulty_t choices[] = {
-    {"Facil", EASY, 180, 3, 3},
-    {"Medio", MEDIUM, 100, 2, 2},
-    {"Dificil", HARD, 75, 1, 2},
-    {"Sair", QUIT, 0, 0, 0}
-  };
+  Difficulty_t choices[] = {{"Facil", EASY, 180, 3, 3},
+			    {"Medio", MEDIUM, 100, 2, 2},
+			    {"Dificil", HARD, 75, 1, 2},
+			    {"Sair", QUIT, 0, 0, 0}};
 
   int n_choices = sizeof(choices) / sizeof(Difficulty_t);
 
@@ -60,30 +58,30 @@ Difficulty_t display_menu() {
     }
     for (int i = 0; i < n_choices; ++i) {
       if (highlight == i + 1) {
-        attron(A_REVERSE);
-        mvprintw(start_y + num_title_lines + 2 + i * 2,
-                 (COLS - strlen(choices[i].difficulty)) / 2, "%s",
-                 choices[i].difficulty);
-        attroff(A_REVERSE);
+	attron(A_REVERSE);
+	mvprintw(start_y + num_title_lines + 2 + i * 2,
+		 (COLS - strlen(choices[i].difficulty)) / 2, "%s",
+		 choices[i].difficulty);
+	attroff(A_REVERSE);
       } else {
-        mvprintw(start_y + num_title_lines + 2 + i * 2,
-                 (COLS - strlen(choices[i].difficulty)) / 2, "%s",
-                 choices[i].difficulty);
+	mvprintw(start_y + num_title_lines + 2 + i * 2,
+		 (COLS - strlen(choices[i].difficulty)) / 2, "%s",
+		 choices[i].difficulty);
       }
     }
     c = getch();
     switch (c) {
     case KEY_UP:
       if (highlight == 1)
-        highlight = n_choices;
+	highlight = n_choices;
       else
-        --highlight;
+	--highlight;
       break;
     case KEY_DOWN:
       if (highlight == n_choices)
-        highlight = 1;
+	highlight = 1;
       else
-        ++highlight;
+	++highlight;
       break;
     case 10: // Enter
       choice = highlight;
@@ -99,7 +97,7 @@ Difficulty_t display_menu() {
   return choices[choice - 1];
 }
 
-/// Carrega o título do arquivo e armazena nas linhas de título
+/// Carrega o arquivo de texto para utilizar como título
 void load_title(char title[][MAX_TITLE_LENGTH], int *num_lines) {
   FILE *file = fopen(TITLE_FILE, "r");
   if (!file) {
@@ -116,6 +114,76 @@ void load_title(char title[][MAX_TITLE_LENGTH], int *num_lines) {
   }
 
   fclose(file);
+}
+
+void load_score(char title[][MAX_TITLE_LENGTH], int *num_lines) {
+  FILE *file = fopen(SCORE_FILE, "r");
+  if (!file) {
+    perror("Erro ao abrir o arquivo de título");
+    exit(EXIT_FAILURE);
+  }
+
+  char line[MAX_TITLE_LENGTH];
+  *num_lines = 0;
+  while (fgets(line, sizeof(line), file) && *num_lines < MAX_TITLE_LINES) {
+    strcpy(title[*num_lines], line);
+    title[*num_lines][strcspn(title[*num_lines], "\n")] = '\0';
+    (*num_lines)++;
+  }
+
+  fclose(file);
+}
+
+/// Exibe o score do jogador
+void display_score(int score) {
+  setlocale(LC_ALL, "");
+
+  initscr();
+  start_color();
+  init_pair(1, COLOR_RED, COLOR_BLACK);
+  init_pair(2, COLOR_YELLOW, COLOR_BLACK);
+  init_pair(3, COLOR_WHITE, COLOR_BLACK);
+  init_pair(4, COLOR_BROWN, COLOR_BLACK);
+
+  char title[MAX_TITLE_LINES][MAX_TITLE_LENGTH];
+  int num_title_lines = 0;
+  load_score(title, &num_title_lines);
+
+  clear();
+  int start_y = (LINES - num_title_lines - 4) / 2;
+  for (int i = 0; i < num_title_lines; ++i) {
+    attron(COLOR_PAIR(1) | A_BOLD);
+    mvprintw(start_y + i, (COLS - strlen(title[i])) / 2, "%s", title[i]);
+    attroff(COLOR_PAIR(1) | A_BOLD);
+  }
+
+  int yMax, xMax;
+  getmaxyx(stdscr, yMax, xMax);
+
+  const char *classification;
+  int color_pair;
+
+  if (score >= 300) {
+    classification = "Classificacao: Ouro";
+    color_pair = 2;
+  } else if (score >= 200) {
+    classification = "Classificacao: Prata";
+    color_pair = 3;
+  } else if (score >= 100) {
+    classification = "Classificacao: Bronze";
+    color_pair = 4;
+  } else {
+    classification = "Classificacao: Fail";
+    color_pair = 1;
+  }
+
+  attron(COLOR_PAIR(color_pair));
+  mvprintw(start_y + num_title_lines + 2, (xMax - strlen("Seu score:")) / 2, "Seu score:");
+  mvprintw(start_y + num_title_lines + 3, (xMax - snprintf(NULL, 0, "%d", score)) / 2, "%d", score);
+  mvprintw(start_y + num_title_lines + 5, (xMax - strlen(classification)) / 2, "%s", classification);
+  attroff(COLOR_PAIR(color_pair));
+
+  sleep(10);
 }
 
 /// Gerencia o tempo da partida
@@ -154,7 +222,7 @@ void display_orders(int y, int x, Order_t p, WINDOW *offscreen) {
   mvwprintw(offscreen, y + altura_caixa - 2, x + largura_caixa - 1, "+");
 }
 
-/// Exibe as informações da partida na interface
+/// Exibe as informacões da partida na interface
 void display_match_info(int y, int x, int time_left, WINDOW *offscreen) {
   char time_left_str[20];
   snprintf(time_left_str, sizeof(time_left_str), "Tempo: %ds", time_left);
@@ -164,10 +232,11 @@ void display_match_info(int y, int x, int time_left, WINDOW *offscreen) {
 }
 
 /// Exibe as bancadas na interface
-void display_bench(int y, int x, char *status, WINDOW *offscreen, int available) {
+void display_bench(int y, int x, char *status, WINDOW *offscreen,
+		   int available) {
   int len = strlen(status);
   int start_pos = (x + 5) - len / 2;
-  if(available == IN_USE)
+  if (available == IN_USE)
     wattron(offscreen, COLOR_PAIR(5));
 
   mvwprintw(offscreen, y, x, "+----------+");
@@ -178,12 +247,11 @@ void display_bench(int y, int x, char *status, WINDOW *offscreen, int available)
 
   mvwprintw(offscreen, y + 2, start_pos, "%s", status);
 
-  if(available == IN_USE)
+  if (available == IN_USE)
     wattroff(offscreen, COLOR_PAIR(5));
-  
 }
 
-/// Desenha caixa de opções de pedidos para o usuario
+/// Desenha caixa de opcões de pedidos para o usuario
 void draw_center_box_with_orders(WINDOW *win, List_t *orders_list,
 				 int num_options) {
   int box_width = 20;
@@ -199,17 +267,19 @@ void draw_center_box_with_orders(WINDOW *win, List_t *orders_list,
 
   int i = 0;
   Node_t *current = orders_list->head;
-  // Desenhar opções
+  // Desenhar opcões
   while (current != NULL && i < MAX_DISPLAYED_ORDERS) {
-    if(current->order.taken == TAKEN)
+    if (current->order.taken == TAKEN)
       wattron(win, COLOR_PAIR(5));
     if (highlight_manager == i + 1) {
       wattron(win, A_REVERSE);
-      mvwprintw(win, start_y + 1 + i, start_x, "|%d. %-23s |", i + 1,current->order.name);
+      mvwprintw(win, start_y + 1 + i, start_x, "|%d. %-23s |", i + 1,
+		current->order.name);
       order_choice = current->order;
       wattroff(win, A_REVERSE);
     } else
-      mvwprintw(win, start_y + 1 + i, start_x, "|%d. %-23s |", i + 1,current->order.name);
+      mvwprintw(win, start_y + 1 + i, start_x, "|%d. %-23s |", i + 1,
+		current->order.name);
     i++;
     current = current->next;
     wattroff(win, COLOR_PAIR(5));
@@ -229,9 +299,9 @@ void draw_center_box_with_cooks(WINDOW *win) {
   int start_x = center_x - box_width / 2;
   // Desenhar borda superior
   mvwprintw(win, start_y, start_x, "+-------------------------+");
-  // Desenhar opções
+  // Desenhar opcões
   for (int i = 0; i < cooks_n; i++) {
-    if(busy_cooks[i] == BUSY)
+    if (busy_cooks[i] == BUSY)
       wattron(win, COLOR_PAIR(5));
 
     if (highlight_manager == i + 1) {
@@ -289,9 +359,11 @@ void display_game(List_t *orders_list) {
   // REGIAO CRITICA
   for (int i = 0; i < benches_n; i++) {
     if (benches_ingredient[i].status == AVAILABLE)
-      display_bench(bench_ingredients_y, bench_ingredients_x, "AV", offscreen, AVAILABLE);
+      display_bench(bench_ingredients_y, bench_ingredients_x, "AV", offscreen,
+		    AVAILABLE);
     else if (benches_ingredient[i].status == IN_USE)
-      display_bench(bench_ingredients_y, bench_ingredients_x, "IP", offscreen, IN_USE);
+      display_bench(bench_ingredients_y, bench_ingredients_x, "IP", offscreen,
+		    IN_USE);
     bench_ingredients_y += 6;
   }
   // REGIAO CRITICA
@@ -301,7 +373,8 @@ void display_game(List_t *orders_list) {
   // REGIAO CRITICA
   for (int i = 0; i < benches_n; i++) {
     if (benches_kitchen[i].status == AVAILABLE)
-      display_bench(bench_kitchen_y, bench_kitchen_x, "AV", offscreen, AVAILABLE);
+      display_bench(bench_kitchen_y, bench_kitchen_x, "AV", offscreen,
+		    AVAILABLE);
     else if (benches_kitchen[i].status == IN_USE)
       display_bench(bench_kitchen_y, bench_kitchen_x, "IP", offscreen, IN_USE);
     bench_kitchen_x += 15;
@@ -346,4 +419,7 @@ void display_game(List_t *orders_list) {
 }
 
 /// Finaliza o uso do ncurses e restaura o terminal ao estado normal
-void end_program() { endwin(); }
+void end_program() {
+  clear();
+  endwin();
+}

@@ -14,13 +14,13 @@ int main() {
   Difficulty_t choice = display_menu();
   if (choice.difficulty_id == 4)
     return 0;
-  
+
   pthread_t timer;
   pthread_t orders;
   pthread_t *chef;
   pthread_t manager;
   pthread_mutex_init(&order_mutex, NULL);
-  pthread_mutex_init(&ingredient_mutex, NULL); 
+  pthread_mutex_init(&ingredient_mutex, NULL);
   pthread_mutex_init(&kitchen_mutex, NULL);
   pthread_mutex_init(&info_mutex, NULL);
   pthread_mutex_init(&cook_mutex, NULL);
@@ -55,6 +55,8 @@ int main() {
 
   while(orders_list->time_left > 0)
     display_game(orders_list);
+
+  display_score(score);
 
   pthread_mutex_destroy(&order_mutex);
   pthread_mutex_destroy(&ingredient_mutex);

@@ -250,7 +250,7 @@ void *create_orders(void *arg) {
   orders[11].points = 8;
   orders[11].taken = 0;
 
-  strcpy(orders[12].name, "Acarajé");
+  strcpy(orders[12].name, "Acaraje");
   orders[12].ingredients_time = 30;
   orders[12].cook_time = 30;
   orders[12].points = 18;
@@ -445,7 +445,7 @@ void *managing(void *arg) {
 	choice_manager = highlight_manager;
   pthread_mutex_lock(&cook_mutex);
 	cook_choice = highlight_manager - 1;
-  if(busy_cooks[cook_choice] != NOT_BUSY) 
+  if(busy_cooks[cook_choice] != NOT_BUSY)
   {
     pthread_mutex_unlock(&cook_mutex);
     break;
