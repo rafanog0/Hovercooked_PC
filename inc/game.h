@@ -1,7 +1,7 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include<pthread.h>
+#include <pthread.h>
 #define BUFFER 128
 
 #define SUCESSO 1
@@ -46,15 +46,15 @@ typedef struct list_t {
   int size;
 } List_t;
 
-typedef struct prep_bench{
+typedef struct prep_bench {
   char order_in[BUFFER];
   int status;
-}prep_bench;
+} prep_bench;
 
-typedef struct cook{
+typedef struct cook {
   char current_order[BUFFER];
   int order_status;
-}cook;
+} cook;
 
 extern char report_error[BUFFER];
 extern int game_time;
@@ -67,10 +67,9 @@ extern pthread_mutex_t order_mutex;
 extern pthread_mutex_t ingredient_mutex;
 extern pthread_mutex_t kitchen_mutex;
 extern pthread_mutex_t info_mutex;
-extern prep_bench* benches_ingredient;
-extern prep_bench* benches_kitchen;
-extern cook* cooks;
-
+extern prep_bench *benches_ingredient;
+extern prep_bench *benches_kitchen;
+extern cook *cooks;
 
 List_t *create_list();
 void *create_orders(void *arg);

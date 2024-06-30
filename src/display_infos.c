@@ -7,19 +7,17 @@
 #include <string.h>
 #include <unistd.h>
 
-//VARIAVEIS GLOBAIS
+// VARIAVEIS GLOBAIS
 int menu_n = COOKS_MENU;
 int highlight_manager = 1;
 int choice_manager = 0;
-//VARIAVEIS GLOBAIS
-
+// VARIAVEIS GLOBAIS
 
 /// Estrutura que representa uma escolha do menu, com título e tempo
 struct choice_t {
   char title[MAX_TITLE_LENGTH];
   int time;
 };
-
 
 /// Inicializa a tela ncurses e configurações de entrada
 void initialize_screen() {
@@ -34,7 +32,7 @@ void initialize_screen() {
 }
 
 /// Exibe o menu e retorna a escolha do usuário
-int display_menu() {
+Difficulty_t display_menu() {
   int highlight = 1;
   int choice = 0;
   int c;
@@ -43,14 +41,14 @@ int display_menu() {
 
   load_title(title, &num_title_lines);
 
-  Choice_t choices[] = {
-    {"Facil", 5},
-    {"Medio", 10},
-    {"Dificil", 15},
-    {"Sair", 0}
+  Difficulty_t choices[] = {
+    {"Facil", EASY, 180, 3, 4},
+    {"Medio", MEDIUM, 100, 2, 2},
+    {"Dificil", HARD, 75, 1, 2},
+    {"Sair", QUIT, 0, 0, 0}
   };
 
-  int n_choices = sizeof(choices) / sizeof(Choice_t);
+  int n_choices = sizeof(choices) / sizeof(Difficulty_t);
 
   while (1) {
     clear();
@@ -62,28 +60,30 @@ int display_menu() {
     }
     for (int i = 0; i < n_choices; ++i) {
       if (highlight == i + 1) {
-	attron(A_REVERSE);
-	mvprintw(start_y + num_title_lines + 2 + i * 2,
-		 (COLS - strlen(choices[i].title)) / 2, "%s", choices[i].title);
-	attroff(A_REVERSE);
+        attron(A_REVERSE);
+        mvprintw(start_y + num_title_lines + 2 + i * 2,
+                 (COLS - strlen(choices[i].difficulty)) / 2, "%s",
+                 choices[i].difficulty);
+        attroff(A_REVERSE);
       } else {
-	mvprintw(start_y + num_title_lines + 2 + i * 2,
-		 (COLS - strlen(choices[i].title)) / 2, "%s", choices[i].title);
+        mvprintw(start_y + num_title_lines + 2 + i * 2,
+                 (COLS - strlen(choices[i].difficulty)) / 2, "%s",
+                 choices[i].difficulty);
       }
     }
     c = getch();
     switch (c) {
     case KEY_UP:
       if (highlight == 1)
-	highlight = n_choices;
+        highlight = n_choices;
       else
-	--highlight;
+        --highlight;
       break;
     case KEY_DOWN:
       if (highlight == n_choices)
-	highlight = 1;
+        highlight = 1;
       else
-	++highlight;
+        ++highlight;
       break;
     case 10: // Enter
       choice = highlight;
@@ -96,7 +96,7 @@ int display_menu() {
     }
   }
 
-  return choice - 1;
+  return choices[choice - 1];
 }
 
 /// Carrega o título do arquivo e armazena nas linhas de título
@@ -119,11 +119,9 @@ void load_title(char title[][MAX_TITLE_LENGTH], int *num_lines) {
 }
 
 /// Gerencia o tempo da partida
-void *match_clock(void *arg)
-{
+void *match_clock(void *arg) {
   List_t *orders_list = (List_t *)arg;
-  while(1)
-  {
+  while (1) {
     sleep(1);
     orders_list->time_left--;
   }
@@ -131,46 +129,46 @@ void *match_clock(void *arg)
 
 /// Exibe os pedidos na interface
 void display_orders(int y, int x, Order_t p, WINDOW *offscreen) {
-    const int largura_caixa = 32; // comprimento da linha horizontal
-    int altura_caixa = 7; // altura inicial
+  const int largura_caixa = 32; // comprimento da linha horizontal
+  int altura_caixa = 7;		// altura inicial
 
-    // Desenha a linha horizontal superior
-    mvwprintw(offscreen, y, x, "+");
-    for (int i = 0; i < largura_caixa - 2; i++) {
-        mvwprintw(offscreen, y, x + 1 + i, "-");
-    }
-    mvwprintw(offscreen, y, x + largura_caixa - 1, "+");
+  // Desenha a linha horizontal superior
+  mvwprintw(offscreen, y, x, "+");
+  for (int i = 0; i < largura_caixa - 2; i++) {
+    mvwprintw(offscreen, y, x + 1 + i, "-");
+  }
+  mvwprintw(offscreen, y, x + largura_caixa - 1, "+");
 
-    // Desenha o conteúdo da caixa
-    mvwprintw(offscreen, y + 1, x, "| Nome: %-23s|", p.name);
-    mvwprintw(offscreen, y + 2, x, "| Tempo cozinhar: %-13d|", p.cook_time);
-    mvwprintw(offscreen, y + 3, x, "| Tempo ingredientes: %-9d|", p.ingredients_time);
-    mvwprintw(offscreen, y + 4, x, "| Pontos: %-21d|", p.points);
+  // Desenha o conteúdo da caixa
+  mvwprintw(offscreen, y + 1, x, "| Nome: %-23s|", p.name);
+  mvwprintw(offscreen, y + 2, x, "| Tempo cozinhar: %-13d|", p.cook_time);
+  mvwprintw(offscreen, y + 3, x, "| Tempo ingredientes: %-9d|",
+	    p.ingredients_time);
+  mvwprintw(offscreen, y + 4, x, "| Pontos: %-21d|", p.points);
 
-    // Desenha a linha horizontal inferior
-    mvwprintw(offscreen, y + altura_caixa - 2, x, "+");
-    for (int i = 0; i < largura_caixa - 2; i++) {
-        mvwprintw(offscreen, y + altura_caixa - 2, x + 1 + i, "-");
-    }
-    mvwprintw(offscreen, y + altura_caixa - 2, x + largura_caixa - 1, "+");
+  // Desenha a linha horizontal inferior
+  mvwprintw(offscreen, y + altura_caixa - 2, x, "+");
+  for (int i = 0; i < largura_caixa - 2; i++) {
+    mvwprintw(offscreen, y + altura_caixa - 2, x + 1 + i, "-");
+  }
+  mvwprintw(offscreen, y + altura_caixa - 2, x + largura_caixa - 1, "+");
 }
 
 /// Exibe as informações da partida na interface
-void display_match_info(int y, int x, int time_left, WINDOW *offscreen)
-{
+void display_match_info(int y, int x, int time_left, WINDOW *offscreen) {
   char time_left_str[20];
   snprintf(time_left_str, sizeof(time_left_str), "Tempo: %ds", time_left);
   mvwprintw(offscreen, y, x + 2, time_left_str);
   snprintf(time_left_str, sizeof(time_left_str), "Score: %d", score);
-  mvwprintw(offscreen, y+1, x + 2, time_left_str);
+  mvwprintw(offscreen, y + 1, x + 2, time_left_str);
 }
 
 /// Exibe as bancadas na interface
-void display_bench(int y, int x, char* status, WINDOW *offscreen) {
+void display_bench(int y, int x, char *status, WINDOW *offscreen) {
   int len = strlen(status);
-  int start_pos = (x + 5) - len/2;
+  int start_pos = (x + 5) - len / 2;
 
-  mvwprintw(offscreen, y, x,     "+----------+");
+  mvwprintw(offscreen, y, x, "+----------+");
   mvwprintw(offscreen, y + 1, x, "|          |");
   mvwprintw(offscreen, y + 2, x, "|          |");
   mvwprintw(offscreen, y + 3, x, "|          |");
@@ -179,67 +177,66 @@ void display_bench(int y, int x, char* status, WINDOW *offscreen) {
   mvwprintw(offscreen, y + 2, start_pos, "%s", status);
 }
 
-/// Desenha caixa de opções de pedidos para o usuario 
-void draw_center_box_with_orders(WINDOW *win, List_t* orders_list, int num_options) {
-    int box_width = 20;
-    int box_height = num_options+2; // 2 linhas para bordas superior e inferior
+/// Desenha caixa de opções de pedidos para o usuario
+void draw_center_box_with_orders(WINDOW *win, List_t *orders_list,
+				 int num_options) {
+  int box_width = 20;
+  int box_height = num_options + 2; // 2 linhas para bordas superior e inferior
 
-    int center_y = LINES / 2;
-    int center_x = COLS / 2;
-    int start_y = center_y - box_height / 2;
-    int start_x = center_x - box_width / 2;
+  int center_y = LINES / 2;
+  int center_x = COLS / 2;
+  int start_y = center_y - box_height / 2;
+  int start_x = center_x - box_width / 2;
 
-    // Desenhar borda superior
-    mvwprintw(win, start_y, start_x, "+-------------------------+");
+  // Desenhar borda superior
+  mvwprintw(win, start_y, start_x, "+-------------------------+");
 
-    int i = 0;
-    Node_t *current = orders_list->head;
-    // Desenhar opções
-    while(current != NULL && i < MAX_DISPLAYED_ORDERS)
-    {
-      if(highlight_manager == i + 1)
-      {
-        wattron(win, A_REVERSE);
-        mvwprintw(win, start_y + 1 + i, start_x, "|%-24s |", current->order.name);
-        order_choice = current->order;
-        wattroff(win, A_REVERSE);
-      }
-      else
-        mvwprintw(win, start_y + 1 + i, start_x, "|%-24s |", current->order.name);
-      i++;
-      current = current->next;
-    }
+  int i = 0;
+  Node_t *current = orders_list->head;
+  // Desenhar opções
+  while (current != NULL && i < MAX_DISPLAYED_ORDERS) {
+    if (highlight_manager == i + 1) {
+      wattron(win, A_REVERSE);
+      mvwprintw(win, start_y + 1 + i, start_x, "|%-24s |", current->order.name);
+      order_choice = current->order;
+      wattroff(win, A_REVERSE);
+    } else
+      mvwprintw(win, start_y + 1 + i, start_x, "|%-24s |", current->order.name);
+    i++;
+    current = current->next;
+  }
 
-    // Desenhar borda inferior
-    mvwprintw(win, start_y + box_height - 1, start_x, "+-------------------------+");
+  // Desenhar borda inferior
+  mvwprintw(win, start_y + box_height - 1, start_x,
+	    "+-------------------------+");
 }
 
 void draw_center_box_with_cooks(WINDOW *win) {
-    int box_width = 20;
-    int box_height = cooks_n + 2; // 2 linhas para bordas superior e inferior
-    int center_y = LINES / 2;
-    int center_x = COLS / 2;
-    int start_y = center_y - box_height / 2;
-    int start_x = center_x - box_width / 2;
+  int box_width = 20;
+  int box_height = cooks_n + 2; // 2 linhas para bordas superior e inferior
+  int center_y = LINES / 2;
+  int center_x = COLS / 2;
+  int start_y = center_y - box_height / 2;
+  int start_x = center_x - box_width / 2;
 
-    // Desenhar borda superior
-    mvwprintw(win, start_y, start_x, "+-------------------------+");
+  // Desenhar borda superior
+  mvwprintw(win, start_y, start_x, "+-------------------------+");
 
-    // Desenhar opções
-    for (int i = 0; i < cooks_n; i++) {
-      if(highlight_manager == i+1)
-      {
-        wattron(win, A_REVERSE);
-        mvwprintw(win, start_y + 1 + i, start_x, "|Cozinheiro %d             |", i+1);
-        wattroff(win, A_REVERSE);
-      }
-      else
-        mvwprintw(win, start_y + 1 + i, start_x, "|Cozinheiro %d             |", i+1);
+  // Desenhar opções
+  for (int i = 0; i < cooks_n; i++) {
+    if (highlight_manager == i + 1) {
+      wattron(win, A_REVERSE);
+      mvwprintw(win, start_y + 1 + i, start_x, "|Cozinheiro %d             |",
+		i + 1);
+      wattroff(win, A_REVERSE);
+    } else
+      mvwprintw(win, start_y + 1 + i, start_x, "|Cozinheiro %d             |",
+		i + 1);
+  }
 
-    }
-
-    // Desenhar borda inferior
-    mvwprintw(win, start_y + box_height - 1, start_x, "+-------------------------+");
+  // Desenhar borda inferior
+  mvwprintw(win, start_y + box_height - 1, start_x,
+	    "+-------------------------+");
 }
 
 /// Exibe a interface gráfica para o usuário
@@ -274,63 +271,59 @@ void display_game(List_t *orders_list) {
 
   mvwprintw(offscreen, 1, 1, "Pedidos:");
   mvwprintw(offscreen, bench_kitchen_y, bench_ingredients_x + 15, "Cozinhas:");
-  mvwprintw(offscreen, bench_ingredients_y - 2, bench_ingredients_x - 5, "Ingredientes:");
+  mvwprintw(offscreen, bench_ingredients_y - 2, bench_ingredients_x - 5,
+	    "Ingredientes:");
 
   pthread_mutex_lock(&ingredient_mutex);
-  //REGIAO CRITICA
-  for(int i = 0; i < benches_n; i++)
-  {
-    if(benches_ingredient[i].status == AVAILABLE)
+  // REGIAO CRITICA
+  for (int i = 0; i < benches_n; i++) {
+    if (benches_ingredient[i].status == AVAILABLE)
       display_bench(bench_ingredients_y, bench_ingredients_x, "AV", offscreen);
-    else if(benches_ingredient[i].status == IN_USE)
+    else if (benches_ingredient[i].status == IN_USE)
       display_bench(bench_ingredients_y, bench_ingredients_x, "IP", offscreen);
     bench_ingredients_y += 6;
   }
-  //REGIAO CRITICA
+  // REGIAO CRITICA
   pthread_mutex_unlock(&ingredient_mutex);
 
   pthread_mutex_lock(&kitchen_mutex);
-  //REGIAO CRITICA
-  for(int i = 0; i < benches_n; i++)
-  {
-    if(benches_kitchen[i].status == AVAILABLE)
+  // REGIAO CRITICA
+  for (int i = 0; i < benches_n; i++) {
+    if (benches_kitchen[i].status == AVAILABLE)
       display_bench(bench_kitchen_y, bench_kitchen_x, "AV", offscreen);
-    else if(benches_kitchen[i].status == IN_USE)
+    else if (benches_kitchen[i].status == IN_USE)
       display_bench(bench_kitchen_y, bench_kitchen_x, "IP", offscreen);
     bench_kitchen_x += 15;
   }
-  //REGIAO CRITICA
+  // REGIAO CRITICA
   pthread_mutex_unlock(&kitchen_mutex);
 
-
-  if(!is_empty(orders_list))
-  {
+  if (!is_empty(orders_list)) {
     pthread_mutex_lock(&order_mutex);
-    //REGIAO CRITICA
+    // REGIAO CRITICA
     Node_t *atual = orders_list->head;
     int i = 0;
-    while(atual != NULL && i < MAX_DISPLAYED_ORDERS) {
+    while (atual != NULL && i < MAX_DISPLAYED_ORDERS) {
       display_orders(orders_y, orders_x, atual->order, offscreen);
 
       orders_x += 34;
       atual = atual->next;
       i++;
     }
-    //REGIAO CRITICA
+    // REGIAO CRITICA
     pthread_mutex_unlock(&order_mutex);
   }
 
-  //REGIAO CRITICA
+  // REGIAO CRITICA
   pthread_mutex_lock(&info_mutex);
   display_match_info(time_y, time_x, orders_list->time_left, offscreen);
   pthread_mutex_unlock(&info_mutex);
-  //REGIAO CRITICA
+  // REGIAO CRITICA
 
-  if(menu_n == COOKS_MENU)
+  if (menu_n == COOKS_MENU)
     draw_center_box_with_cooks(offscreen);
-  else
-  {
-    if(orders_list->size <= MAX_DISPLAYED_ORDERS)
+  else {
+    if (orders_list->size <= MAX_DISPLAYED_ORDERS)
       draw_center_box_with_orders(offscreen, orders_list, orders_list->size);
     else
       draw_center_box_with_orders(offscreen, orders_list, MAX_DISPLAYED_ORDERS);
@@ -342,6 +335,4 @@ void display_game(List_t *orders_list) {
 }
 
 /// Finaliza o uso do ncurses e restaura o terminal ao estado normal
-void end_program() {
-  endwin();
-}
+void end_program() { endwin(); }

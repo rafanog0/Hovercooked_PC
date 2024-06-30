@@ -2,7 +2,7 @@
 #define DISPLAY_INFOS_H
 
 #include "game.h"
-#include<ncurses.h>
+#include <ncurses.h>
 
 #define MAX_TITLE_LINES 10
 #define MAX_TITLE_LENGTH 100
@@ -10,15 +10,25 @@
 #define MAX_DISPLAYED_ORDERS 5
 #define COOKS_MENU 0
 #define ORDERS_MENU 1
+#define EASY 1
+#define MEDIUM 2
+#define HARD 3
+#define QUIT 4
 
 extern int menu_n;
 extern int highlight_manager;
 extern int choice_manager;
 
-typedef struct choice_t Choice_t;
+typedef struct difficulty_t {
+  char difficulty[MAX_TITLE_LENGTH];
+  int difficulty_id;
+  int time;
+  int benches;
+  int cooks;
+} Difficulty_t;
 
 void initialize_screen();
-int display_menu();
+Difficulty_t display_menu();
 void end_program();
 void load_title(char title[][MAX_TITLE_LENGTH], int *num_lines);
 void display_game(List_t *orders_list);

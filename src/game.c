@@ -1,11 +1,9 @@
-#include "../inc/display_infos.h"
 #include "../inc/game.h"
+#include "../inc/display_infos.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-
 
 // VARIAVEIS GLOBAIS
 char report_error[BUFFER];
@@ -16,14 +14,13 @@ int cooks_n;
 int cook_choice;
 Order_t order_choice;
 
-
 pthread_mutex_t order_mutex;
 pthread_mutex_t ingredient_mutex;
 pthread_mutex_t kitchen_mutex;
 pthread_mutex_t info_mutex;
-prep_bench* benches_ingredient;
-prep_bench* benches_kitchen;
-cook* cooks;
+prep_bench *benches_ingredient;
+prep_bench *benches_kitchen;
+cook *cooks;
 // VARIAVEIS GLOBAIS
 
 /// Cria uma lista encadeada
@@ -42,32 +39,32 @@ List_t *create_list() {
 
 /// Insere um pedido na lista encadeada
 int insert_in_list(List_t *list, Order_t order) {
-    Node_t *new_node = (Node_t *)malloc(sizeof(Node_t));
+  Node_t *new_node = (Node_t *)malloc(sizeof(Node_t));
 
-    if (new_node == NULL) {
-        strcpy(report_error, "Erro ao alocar memória para o novo nó;\n");
-        return ERRO;
+  if (new_node == NULL) {
+    strcpy(report_error, "Erro ao alocar memória para o novo nó;\n");
+    return ERRO;
+  }
+
+  new_node->order = order;
+  new_node->next = NULL;
+
+  if (list->head == NULL) {
+    // Lista vazia, insere como primeiro elemento
+    list->head = new_node;
+  } else {
+    // Percorre a lista até o último nó
+    Node_t *current = list->head;
+    while (current->next != NULL) {
+      current = current->next;
     }
+    // Insere no final da lista
+    current->next = new_node;
+  }
 
-    new_node->order = order;
-    new_node->next = NULL;
+  list->size++;
 
-    if (list->head == NULL) {
-        // Lista vazia, insere como primeiro elemento
-        list->head = new_node;
-    } else {
-        // Percorre a lista até o último nó
-        Node_t *current = list->head;
-        while (current->next != NULL) {
-            current = current->next;
-        }
-        // Insere no final da lista
-        current->next = new_node;
-    }
-
-    list->size++;
-
-    return SUCESSO;
+  return SUCESSO;
 }
 
 /// Remove um pedido da lista encadeada com base no nome
@@ -153,14 +150,11 @@ void free_list(List_t *list) {
   free(list);
 }
 
-
 /// Busca por um pedido especifico na lista de pedidos
-Node_t *search_order_list(List_t *orders, char *name)
-{
+Node_t *search_order_list(List_t *orders, char *name) {
   Node_t *current = orders->head;
-  while(current != NULL)
-  {
-    if(!strcmp(current->order.name, name))
+  while (current != NULL) {
+    if (!strcmp(current->order.name, name))
       break;
     current = current->next;
   }
@@ -179,7 +173,7 @@ Order_t create_sample_order(const char *name, int time, int points) {
 /// Rotina que cria os pedidos e insere periodicamente, conforme a dificuldade
 void *create_orders(void *arg) {
 
-  List_t* orders_list = (List_t *) arg;
+  List_t *orders_list = (List_t *)arg;
   Order_t orders[15];
 
   strcpy(orders[0].name, "Bife Acebolado c Fritas");
@@ -263,28 +257,22 @@ void *create_orders(void *arg) {
   orders_list->size = 3;
   pthread_mutex_unlock(&order_mutex);
 
-  for(int i = 3; i < MAX_ORDERS; i++)
-  {
+  for (int i = 3; i < MAX_ORDERS; i++) {
     sleep(orders_list->create_order_time);
     pthread_mutex_lock(&order_mutex);
-    //REGIAO CRITICA
+    // REGIAO CRITICA
     orders_list->size++;
     insert_in_list(orders_list, orders[i]);
-    //REGIAO CRITICA
+    // REGIAO CRITICA
     pthread_mutex_unlock(&order_mutex);
   }
-
-  
 }
 
 // Busca por uma bancada de ingredientes disponivel para começar o pedido
-int search_available_ingredient_bench()
-{
+int search_available_ingredient_bench() {
   pthread_mutex_lock(&ingredient_mutex);
-  for(int i = 0; i<benches_n; i++)
-  {
-    if(benches_ingredient[i].status == AVAILABLE)
-    {
+  for (int i = 0; i < benches_n; i++) {
+    if (benches_ingredient[i].status == AVAILABLE) {
       benches_ingredient[i].status = IN_USE;
       pthread_mutex_unlock(&ingredient_mutex);
       return i;
@@ -295,13 +283,10 @@ int search_available_ingredient_bench()
 }
 
 // Busca por uma bancada de cozinhas disponivel para começar o pedido
-int search_available_kitchen_bench()
-{
+int search_available_kitchen_bench() {
   pthread_mutex_lock(&kitchen_mutex);
-  for(int i = 0; i<benches_n; i++)
-  {
-    if(benches_kitchen[i].status == AVAILABLE)
-    {
+  for (int i = 0; i < benches_n; i++) {
+    if (benches_kitchen[i].status == AVAILABLE) {
       benches_kitchen[i].status = IN_USE;
       pthread_mutex_unlock(&kitchen_mutex);
       return i;
@@ -311,25 +296,27 @@ int search_available_kitchen_bench()
   return NOT_FOUND;
 }
 
-
 /// Rotina que permite um cozinheiro cozinhar
-void *cooking(void** args)
-{
+void *cooking(void **args) {
   int ingredient_bench = NOT_FOUND;
   int kitchen_bench = NOT_FOUND;
-  List_t* orders_list = (List_t *) args[0];
-  int cook_id = *(int*)args[1];
-  
-  Node_t *node_to_be_cooked = search_order_list(orders_list, cooks[cook_id].current_order);
-  if(node_to_be_cooked == NULL)
+  List_t *orders_list = (List_t *)args[0];
+  int cook_id = *(int *)args[1];
+
+  Node_t *node_to_be_cooked =
+      search_order_list(orders_list, cooks[cook_id].current_order);
+  if (node_to_be_cooked == NULL)
     strcpy(report_error, "Order doesnt exist\n");
-  
+
   Order_t to_be_cooked = node_to_be_cooked->order;
 
-  while(1)
-  {
-    ingredient_bench = search_available_ingredient_bench(); // Se não tiver bancadas disponiveis, aguarda e tenta novamente
-    if(ingredient_bench != NOT_FOUND) break;
+  while (1) {
+    ingredient_bench =
+	search_available_ingredient_bench(); // Se não tiver bancadas
+					     // disponiveis, aguarda e tenta
+					     // novamente
+    if (ingredient_bench != NOT_FOUND)
+      break;
     sleep(5);
   }
 
@@ -338,11 +325,13 @@ void *cooking(void** args)
   pthread_mutex_lock(&ingredient_mutex);
   benches_ingredient[ingredient_bench].status = AVAILABLE;
   pthread_mutex_unlock(&ingredient_mutex);
-  
-  while(1)
-  {
-    kitchen_bench = search_available_kitchen_bench(); // Se não tiver bancadas disponiveis, aguarda e tenta novamente
-    if(kitchen_bench != NOT_FOUND) break;
+
+  while (1) {
+    kitchen_bench =
+	search_available_kitchen_bench(); // Se não tiver bancadas disponiveis,
+					  // aguarda e tenta novamente
+    if (kitchen_bench != NOT_FOUND)
+      break;
     sleep(5);
   }
 
@@ -355,89 +344,84 @@ void *cooking(void** args)
   pthread_mutex_lock(&info_mutex);
   score += to_be_cooked.points;
   pthread_mutex_unlock(&info_mutex);
-  
+
   pthread_mutex_lock(&order_mutex);
   int ret = remove_by_name(orders_list, to_be_cooked.name);
   pthread_mutex_unlock(&order_mutex);
-
 }
 
+void print_menu(WINDOW *menu_win, int highlight, char *choices[],
+		int n_choices) {
+  int x, y, i;
 
-void print_menu(WINDOW *menu_win, int highlight, char *choices[], int n_choices) {
-    int x, y, i;
-    
-    x = 2;
-    y = 2;
-    box(menu_win, 0, 0);
-    for(i = 0; i < n_choices; ++i) {
-        if(highlight == i + 1) {
-            wattron(menu_win, A_REVERSE);
-            mvwprintw(menu_win, y, x, "%s", choices[i]);
-            wattroff(menu_win, A_REVERSE);
-        } else
-            mvwprintw(menu_win, y, x, "%s", choices[i]);
-        ++y;
-    }
-    wrefresh(menu_win);
+  x = 2;
+  y = 2;
+  box(menu_win, 0, 0);
+  for (i = 0; i < n_choices; ++i) {
+    if (highlight == i + 1) {
+      wattron(menu_win, A_REVERSE);
+      mvwprintw(menu_win, y, x, "%s", choices[i]);
+      wattroff(menu_win, A_REVERSE);
+    } else
+      mvwprintw(menu_win, y, x, "%s", choices[i]);
+    ++y;
+  }
+  wrefresh(menu_win);
 }
 
 void *managing(void *arg) {
-    // Inicializa a janela e outras variáveis
+  // Inicializa a janela e outras variáveis
 
-    char c;
-    
-    while(1) {
-        c = getch();
-        if(menu_n == ORDERS_MENU)
-        {
-          switch(c) {
-              case '1':
-                  highlight_manager = 1;
-                  break;
-              case '2':
-                  highlight_manager = 2;
-                  break;
-              case '3':
-                  highlight_manager = 3;
-                  break;
-              case '4':
-                  highlight_manager = 3;
-                  break;
-              case '5':
-                  highlight_manager = 3;
-                  break;
-              case 10: // Enter key
-                  choice_manager = highlight_manager;
-                  menu_n = COOKS_MENU;
-                  break;
-              default:
-                  // refresh();
-                  break;
-          }
-        }
-        else
-          switch(c) {
-              case '1':
-                  highlight_manager = 1;
-                  break;
-              case '2':
-                  highlight_manager = 2;
-                  break;
-              case '3':
-                  highlight_manager = 3;
-                  break;
-              case 10: // Enter key
-                  choice_manager = highlight_manager;
-                  cook_choice = highlight_manager - 1;
-                  menu_n = ORDERS_MENU;
+  char c;
 
-                  break;
-              default:
-                  // refresh();
-                  break;
-          }
-        {
+  while (1) {
+    c = getch();
+    if (menu_n == ORDERS_MENU) {
+      switch (c) {
+      case '1':
+	highlight_manager = 1;
+	break;
+      case '2':
+	highlight_manager = 2;
+	break;
+      case '3':
+	highlight_manager = 3;
+	break;
+      case '4':
+	highlight_manager = 3;
+	break;
+      case '5':
+	highlight_manager = 3;
+	break;
+      case 10: // Enter key
+	choice_manager = highlight_manager;
+	menu_n = COOKS_MENU;
+	break;
+      default:
+	// refresh();
+	break;
+      }
+    } else
+      switch (c) {
+      case '1':
+	highlight_manager = 1;
+	break;
+      case '2':
+	highlight_manager = 2;
+	break;
+      case '3':
+	highlight_manager = 3;
+	break;
+      case 10: // Enter key
+	choice_manager = highlight_manager;
+	cook_choice = highlight_manager - 1;
+	menu_n = ORDERS_MENU;
 
-        }
-    }
+	break;
+      default:
+	// refresh();
+	break;
+      }
+    {}
+  }
 }
