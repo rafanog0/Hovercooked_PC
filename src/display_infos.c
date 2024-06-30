@@ -42,7 +42,7 @@ Difficulty_t display_menu() {
   load_title(title, &num_title_lines);
 
   Difficulty_t choices[] = {
-    {"Facil", EASY, 180, 3, 4},
+    {"Facil", EASY, 180, 3, 3},
     {"Medio", MEDIUM, 100, 2, 2},
     {"Dificil", HARD, 75, 1, 2},
     {"Sair", QUIT, 0, 0, 0}
@@ -164,9 +164,11 @@ void display_match_info(int y, int x, int time_left, WINDOW *offscreen) {
 }
 
 /// Exibe as bancadas na interface
-void display_bench(int y, int x, char *status, WINDOW *offscreen) {
+void display_bench(int y, int x, char *status, WINDOW *offscreen, int available) {
   int len = strlen(status);
   int start_pos = (x + 5) - len / 2;
+  if(available == IN_USE)
+    wattron(offscreen, COLOR_PAIR(5));
 
   mvwprintw(offscreen, y, x, "+----------+");
   mvwprintw(offscreen, y + 1, x, "|          |");
@@ -175,6 +177,10 @@ void display_bench(int y, int x, char *status, WINDOW *offscreen) {
   mvwprintw(offscreen, y + 4, x, "+----------+");
 
   mvwprintw(offscreen, y + 2, start_pos, "%s", status);
+
+  if(available == IN_USE)
+    wattroff(offscreen, COLOR_PAIR(5));
+  
 }
 
 /// Desenha caixa de opções de pedidos para o usuario
@@ -189,26 +195,29 @@ void draw_center_box_with_orders(WINDOW *win, List_t *orders_list,
   int start_x = center_x - box_width / 2;
 
   // Desenhar borda superior
-  mvwprintw(win, start_y, start_x, "+-------------------------+");
+  mvwprintw(win, start_y, start_x, "+---------------------------+");
 
   int i = 0;
   Node_t *current = orders_list->head;
   // Desenhar opções
   while (current != NULL && i < MAX_DISPLAYED_ORDERS) {
+    if(current->order.taken == TAKEN)
+      wattron(win, COLOR_PAIR(5));
     if (highlight_manager == i + 1) {
       wattron(win, A_REVERSE);
-      mvwprintw(win, start_y + 1 + i, start_x, "|%-24s |", current->order.name);
+      mvwprintw(win, start_y + 1 + i, start_x, "|%d. %-23s |", i + 1,current->order.name);
       order_choice = current->order;
       wattroff(win, A_REVERSE);
     } else
-      mvwprintw(win, start_y + 1 + i, start_x, "|%-24s |", current->order.name);
+      mvwprintw(win, start_y + 1 + i, start_x, "|%d. %-23s |", i + 1,current->order.name);
     i++;
     current = current->next;
+    wattroff(win, COLOR_PAIR(5));
   }
 
   // Desenhar borda inferior
   mvwprintw(win, start_y + box_height - 1, start_x,
-	    "+-------------------------+");
+	    "+---------------------------+");
 }
 
 void draw_center_box_with_cooks(WINDOW *win) {
@@ -218,12 +227,13 @@ void draw_center_box_with_cooks(WINDOW *win) {
   int center_x = COLS / 2;
   int start_y = center_y - box_height / 2;
   int start_x = center_x - box_width / 2;
-
   // Desenhar borda superior
   mvwprintw(win, start_y, start_x, "+-------------------------+");
-
   // Desenhar opções
   for (int i = 0; i < cooks_n; i++) {
+    if(busy_cooks[i] == BUSY)
+      wattron(win, COLOR_PAIR(5));
+
     if (highlight_manager == i + 1) {
       wattron(win, A_REVERSE);
       mvwprintw(win, start_y + 1 + i, start_x, "|Cozinheiro %d             |",
@@ -232,6 +242,7 @@ void draw_center_box_with_cooks(WINDOW *win) {
     } else
       mvwprintw(win, start_y + 1 + i, start_x, "|Cozinheiro %d             |",
 		i + 1);
+    wattroff(win, COLOR_PAIR(5));
   }
 
   // Desenhar borda inferior
@@ -243,7 +254,7 @@ void draw_center_box_with_cooks(WINDOW *win) {
 void display_game(List_t *orders_list) {
 
   WINDOW *offscreen = newwin(LINES, COLS, 0, 0); // Cria uma janela fora da tela
-
+  init_pair(5, COLOR_RED, COLOR_BLACK);
   if (offscreen == NULL) {
     endwin();
     strcpy(report_error, "Erro ao criar janela offscreen.");
@@ -278,9 +289,9 @@ void display_game(List_t *orders_list) {
   // REGIAO CRITICA
   for (int i = 0; i < benches_n; i++) {
     if (benches_ingredient[i].status == AVAILABLE)
-      display_bench(bench_ingredients_y, bench_ingredients_x, "AV", offscreen);
+      display_bench(bench_ingredients_y, bench_ingredients_x, "AV", offscreen, AVAILABLE);
     else if (benches_ingredient[i].status == IN_USE)
-      display_bench(bench_ingredients_y, bench_ingredients_x, "IP", offscreen);
+      display_bench(bench_ingredients_y, bench_ingredients_x, "IP", offscreen, IN_USE);
     bench_ingredients_y += 6;
   }
   // REGIAO CRITICA
@@ -290,9 +301,9 @@ void display_game(List_t *orders_list) {
   // REGIAO CRITICA
   for (int i = 0; i < benches_n; i++) {
     if (benches_kitchen[i].status == AVAILABLE)
-      display_bench(bench_kitchen_y, bench_kitchen_x, "AV", offscreen);
+      display_bench(bench_kitchen_y, bench_kitchen_x, "AV", offscreen, AVAILABLE);
     else if (benches_kitchen[i].status == IN_USE)
-      display_bench(bench_kitchen_y, bench_kitchen_x, "IP", offscreen);
+      display_bench(bench_kitchen_y, bench_kitchen_x, "IP", offscreen, IN_USE);
     bench_kitchen_x += 15;
   }
   // REGIAO CRITICA

@@ -12,12 +12,14 @@ int score = 0;
 int benches_n;
 int cooks_n;
 int cook_choice;
+int busy_cooks[] = {0, 0, 0};
 Order_t order_choice;
 
 pthread_mutex_t order_mutex;
 pthread_mutex_t ingredient_mutex;
 pthread_mutex_t kitchen_mutex;
 pthread_mutex_t info_mutex;
+pthread_mutex_t cook_mutex;
 prep_bench *benches_ingredient;
 prep_bench *benches_kitchen;
 cook *cooks;
@@ -180,85 +182,101 @@ void *create_orders(void *arg) {
   orders[0].ingredients_time = 5;
   orders[0].cook_time = 5;
   orders[0].points = 15;
+  orders[0].taken = 0;
 
   strcpy(orders[1].name, "Pao de Queijo");
   orders[1].ingredients_time = 7;
   orders[1].cook_time = 7;
   orders[1].points = 10;
+  orders[1].taken = 0;
 
   strcpy(orders[2].name, "Isca de Peixe");
   orders[2].ingredients_time = 10;
   orders[2].cook_time = 10;
   orders[2].points = 120;
+  orders[2].taken = 0;
 
   strcpy(orders[3].name, "Misto Quente");
   orders[3].ingredients_time = 10;
   orders[3].cook_time = 10;
   orders[3].points = 7;
+  orders[3].taken = 0;
 
   strcpy(orders[4].name, "Feijoada");
   orders[4].ingredients_time = 40;
   orders[4].cook_time = 40;
   orders[4].points = 25;
+  orders[4].taken = 0;
 
   strcpy(orders[5].name, "Moqueca de Camarao");
   orders[5].ingredients_time = 35;
   orders[5].cook_time = 35;
   orders[5].points = 22;
+  orders[5].taken = 0;
 
   strcpy(orders[6].name, "Brigadeiro");
   orders[6].ingredients_time = 20;
   orders[6].cook_time = 20;
   orders[6].points = 10;
+  orders[6].taken = 0;
 
   strcpy(orders[7].name, "Escondidinho de Carne");
   orders[7].ingredients_time = 30;
   orders[7].cook_time = 30;
   orders[7].points = 18;
+  orders[7].taken = 0;
 
   strcpy(orders[8].name, "Tapioca");
   orders[8].ingredients_time = 15;
   orders[8].cook_time = 15;
   orders[8].points = 9;
+  orders[8].taken = 0;
 
   strcpy(orders[9].name, "Vatapa");
   orders[9].ingredients_time = 25;
   orders[9].cook_time = 25;
   orders[9].points = 20;
+  orders[9].taken = 0;
 
   strcpy(orders[10].name, "Coxinha");
   orders[10].ingredients_time = 20;
   orders[10].cook_time = 20;
   orders[10].points = 14;
+  orders[10].taken = 0;
 
   strcpy(orders[11].name, "Farofa");
   orders[11].ingredients_time = 10;
   orders[11].cook_time = 10;
   orders[11].points = 8;
+  orders[11].taken = 0;
 
   strcpy(orders[12].name, "Acarajé");
   orders[12].ingredients_time = 30;
   orders[12].cook_time = 30;
   orders[12].points = 18;
+  orders[12].taken = 0;
 
   strcpy(orders[13].name, "Bobo de Camarao");
   orders[13].ingredients_time = 35;
   orders[13].cook_time = 35;
   orders[13].points = 22;
+  orders[13].taken = 0;
 
   strcpy(orders[14].name, "Quindim");
   orders[14].ingredients_time = 20;
   orders[14].cook_time = 20;
   orders[14].points = 15;
+  orders[14].taken = 0;
+
   pthread_mutex_lock(&order_mutex);
   insert_in_list(orders_list, orders[0]);
-  insert_in_list(orders_list, orders[1]);
+  insert_in_list(orders_list, orders[1]); // Jogo inicia com 3 pedidos por padrão
   insert_in_list(orders_list, orders[2]);
   orders_list->size = 3;
   pthread_mutex_unlock(&order_mutex);
 
   for (int i = 3; i < MAX_ORDERS; i++) {
-    sleep(orders_list->create_order_time);
+    sleep((orders_list->create_order_time)/7);
     pthread_mutex_lock(&order_mutex);
     // REGIAO CRITICA
     orders_list->size++;
@@ -297,16 +315,20 @@ int search_available_kitchen_bench() {
 }
 
 /// Rotina que permite um cozinheiro cozinhar
-void *cooking(void **args) {
+void *cooking(void *arg) {
   int ingredient_bench = NOT_FOUND;
   int kitchen_bench = NOT_FOUND;
-  List_t *orders_list = (List_t *)args[0];
-  int cook_id = *(int *)args[1];
+  List_t *orders_list = (List_t *)arg;
+  int cook_id = cook_choice;
+  busy_cooks[cook_id] = 1;
+  pthread_mutex_unlock(&cook_mutex);
 
-  Node_t *node_to_be_cooked =
-      search_order_list(orders_list, cooks[cook_id].current_order);
+  Node_t *node_to_be_cooked = search_order_list(orders_list, cooks[cook_id].current_order);
   if (node_to_be_cooked == NULL)
     strcpy(report_error, "Order doesnt exist\n");
+  pthread_mutex_lock(&order_mutex);
+  node_to_be_cooked->order.taken = 1;
+  pthread_mutex_unlock(&order_mutex);
 
   Order_t to_be_cooked = node_to_be_cooked->order;
 
@@ -327,9 +349,7 @@ void *cooking(void **args) {
   pthread_mutex_unlock(&ingredient_mutex);
 
   while (1) {
-    kitchen_bench =
-	search_available_kitchen_bench(); // Se não tiver bancadas disponiveis,
-					  // aguarda e tenta novamente
+    kitchen_bench = search_available_kitchen_bench(); // Se não tiver bancadas disponiveis aguarda e tenta novamente
     if (kitchen_bench != NOT_FOUND)
       break;
     sleep(5);
@@ -348,6 +368,10 @@ void *cooking(void **args) {
   pthread_mutex_lock(&order_mutex);
   int ret = remove_by_name(orders_list, to_be_cooked.name);
   pthread_mutex_unlock(&order_mutex);
+
+  pthread_mutex_lock(&cook_mutex);
+  busy_cooks[cook_id] = 0;
+  pthread_mutex_unlock(&cook_mutex);
 }
 
 void print_menu(WINDOW *menu_win, int highlight, char *choices[],
@@ -371,7 +395,9 @@ void print_menu(WINDOW *menu_win, int highlight, char *choices[],
 
 void *managing(void *arg) {
   // Inicializa a janela e outras variáveis
-
+  pthread_t *chef;
+  List_t *orders_list = (List_t *)arg;
+  chef = (pthread_t*) malloc(cooks_n * sizeof(pthread_t));
   char c;
 
   while (1) {
@@ -388,17 +414,20 @@ void *managing(void *arg) {
 	highlight_manager = 3;
 	break;
       case '4':
-	highlight_manager = 3;
+	highlight_manager = 4;
 	break;
       case '5':
-	highlight_manager = 3;
+	highlight_manager = 5;
 	break;
       case 10: // Enter key
+  if(order_choice.taken != NOT_TAKEN) break;
 	choice_manager = highlight_manager;
+  void *arg = (void*)orders_list;
+  strcpy(cooks[cook_choice].current_order, order_choice.name);
+  pthread_create(&chef[cook_choice], NULL, cooking, arg);
 	menu_n = COOKS_MENU;
 	break;
       default:
-	// refresh();
 	break;
       }
     } else
@@ -414,14 +443,18 @@ void *managing(void *arg) {
 	break;
       case 10: // Enter key
 	choice_manager = highlight_manager;
+  pthread_mutex_lock(&cook_mutex);
 	cook_choice = highlight_manager - 1;
+  if(busy_cooks[cook_choice] != NOT_BUSY) 
+  {
+    pthread_mutex_unlock(&cook_mutex);
+    break;
+  }
 	menu_n = ORDERS_MENU;
 
 	break;
       default:
-	// refresh();
 	break;
       }
-    {}
   }
 }
