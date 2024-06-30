@@ -12,8 +12,12 @@ make
 ```
 #### Diretamente no terminal:
 ```bash
-gcc -c -w -I./inc -g src/main.c -o obj/main.o -lncurses
+gcc -c -w -I./inc -g src/display_infos.c -o obj/display_infos.o
+gcc -c -w -I./inc -g src/game.c -o obj/game.o
+gcc -c -w -I./inc -g src/main.c -o obj/main.o
+gcc  ./obj/*.o -o main -lncurses
 ```
+
 ```bash
 ./main
 ```
