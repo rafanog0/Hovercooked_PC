@@ -405,56 +405,56 @@ void *managing(void *arg) {
     if (menu_n == ORDERS_MENU) {
       switch (c) {
       case '1':
-	highlight_manager = 1;
-	break;
+	      highlight_manager = 1;
+	      break;
       case '2':
-	highlight_manager = 2;
-	break;
+	      highlight_manager = 2;
+	      break;
       case '3':
-	highlight_manager = 3;
-	break;
+	      highlight_manager = 3;
+	      break;
       case '4':
-	highlight_manager = 4;
-	break;
+	      highlight_manager = 4;
+	      break;
       case '5':
-	highlight_manager = 5;
-	break;
+	      highlight_manager = 5;
+	      break;
       case 10: // Enter key
-  if(order_choice.taken != NOT_TAKEN) break;
-	choice_manager = highlight_manager;
-  void *arg = (void*)orders_list;
-  strcpy(cooks[cook_choice].current_order, order_choice.name);
-  pthread_create(&chef[cook_choice], NULL, cooking, arg);
-	menu_n = COOKS_MENU;
-	break;
+        if(order_choice.taken != NOT_TAKEN) break;
+        choice_manager = highlight_manager;
+        void *arg = (void*)orders_list;
+        strcpy(cooks[cook_choice].current_order, order_choice.name);
+        pthread_create(&chef[cook_choice], NULL, cooking, arg);
+        menu_n = COOKS_MENU;
+        break;
       default:
-	break;
+	      break;
       }
     } else
       switch (c) {
       case '1':
-	highlight_manager = 1;
-	break;
+        highlight_manager = 1;
+        break;
       case '2':
-	highlight_manager = 2;
-	break;
+        highlight_manager = 2;
+        break;
       case '3':
-	highlight_manager = 3;
-	break;
+        highlight_manager = 3;
+        break;
       case 10: // Enter key
-	choice_manager = highlight_manager;
-  pthread_mutex_lock(&cook_mutex);
-	cook_choice = highlight_manager - 1;
-  if(busy_cooks[cook_choice] != NOT_BUSY)
-  {
-    pthread_mutex_unlock(&cook_mutex);
-    break;
-  }
-	menu_n = ORDERS_MENU;
+        choice_manager = highlight_manager;
+        pthread_mutex_lock(&cook_mutex);
+        cook_choice = highlight_manager - 1;
+        if(busy_cooks[cook_choice] != NOT_BUSY)
+        {
+          pthread_mutex_unlock(&cook_mutex);
+          break;
+        }
+        menu_n = ORDERS_MENU;
 
-	break;
+        break;
       default:
-	break;
+	      break;
       }
   }
 }

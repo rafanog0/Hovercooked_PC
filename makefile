@@ -8,11 +8,13 @@ CFLAGS = -c -w -I$(INCDIR) -g
 LIBFLAGS = -lncurses
 SRC = $(wildcard $(SRCDIR)/*.c)
 OBJ = $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SRC))
-EXE = main
+EXE = hovercooked
 
 .PHONY: all clean
 
 all: clean $(EXE) run
+
+compile: clean $(EXE)
 
 $(EXE): $(OBJ)
 	$(CC) $(LDFLAGS) $(OBJDIR)/*.o -o $@ $(LIBFLAGS)
